@@ -137,6 +137,16 @@
       <div class="g-legend" id="rev-legend"></div>
       <div class="g-chart" id="rev-chart" data-source="payments"></div>
     </div>
+    <div class="g-card" style="margin-top: var(--cds-gap-md);" id="ws-card">
+      <h3>Revenue per workshop</h3>
+      <p class="g-cn">Each fortnightly workshop held in the period: seats paid in Razorpay at ₹3,999 and revenue collected.</p>
+      <div class="g-tbl-wrap">
+        <table class="g-tbl" id="ws-table" data-source="workshops" data-row-key="period,workshop">
+          <thead><tr><th data-field="workshop">Workshop date</th><th class="num" data-field="seats">Seats sold</th><th class="num" data-field="revenue">Revenue</th><th class="num" data-field="vs_avg">vs average</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
   <section class="g-sec" id="funnel">
@@ -420,6 +430,27 @@ dash.calc('adsets_summary', {
   },
 });
 
+dash.calc('workshops', {
+  title: 'Revenue per workshop',
+  description: 'Seats sold and revenue for each fortnightly workshop held in each period, from Razorpay workshop payments.',
+  inputs: ['periods', 'payments'],
+  fn: (periods, payments) => {
+    const by = {};
+    payments.filter((r) => r.stream === 'Workshop').forEach((r) => {
+      const d = r.type.replace('Workshop ', '');
+      const x = by[d] || (by[d] = {seats: 0, revenue: 0});
+      x.seats += 1; x.revenue += r.amount;
+    });
+    const out = [];
+    periods.forEach((p) => {
+      const rows = Object.keys(by).filter((d) => d >= p.start && d <= p.end).sort().reverse();
+      const avg = rows.length ? rows.reduce((t, d) => t + by[d].revenue, 0) / rows.length : 0;
+      rows.forEach((d) => out.push({period: p.period, workshop: d, seats: by[d].seats, revenue: by[d].revenue, vs_avg: avg ? by[d].revenue / avg - 1 : null}));
+    });
+    return out;
+  },
+});
+
 dash.calc('landing', {
   title: 'Landing pages by period',
   description: 'Visits, form submits, conversion, drop-off and average load time for each landing page.',
@@ -667,6 +698,16 @@ dash.calc('landing', {
         [(r) => inr(r.cost_per_result), 'num'],
       ]);
     } else if (A.status === 'error') fail(at, 9); else at.replaceChildren();
+    // workshops
+    const W = dash.data('workshops'); const wt = document.querySelector('#ws-table tbody');
+    if (W.status === 'ok') {
+      const rows = W.data.filter((r) => r.period === per);
+      if (!rows.length) { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 4; td.textContent = 'No workshop held in this period.'; td.style.color = 'var(--color-fg-muted)'; tr.append(td); wt.replaceChildren(tr); }
+      else fill(wt, rows, (r) => enc(r.period) + ',' + enc(r.workshop), [
+        [(r) => r.workshop], [(r) => d3.format(',')(r.seats), 'num'], [(r) => inr(r.revenue), 'num'],
+        [(r) => { const s = document.createElement('span'); s.textContent = signed(r.vs_avg); if (r.vs_avg != null && r.vs_avg < -0.15) s.className = 'g-flag'; return s; }, 'num'],
+      ]);
+    } else if (W.status === 'error') fail(wt, 4); else wt.replaceChildren();
     // landing pages
     const L = dash.data('landing'); const lt = document.querySelector('#lp-table tbody');
     if (L.status === 'ok') {
