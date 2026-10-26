@@ -1,0 +1,295 @@
+{
+  "name": "Syllabus pace escalations (Mondays 07:00)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Syllabus pace escalations (Mondays 07:00)\nApplies the escalation ladder every Monday: -10 pts = student nudge + advisor flag; -20 pts = parent WhatsApp + 2-week sprint logged; -20 pts for two months = ClickUp task to trigger tutor support.",
+        "width": 420,
+        "height": 220
+      },
+      "id": "1671f3e3-524b-539b-aa90-b727b92a2e96",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "2ba9b57f-76cc-58c7-90e3-30873a723890",
+      "name": "Mondays 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM alcovia.v_escalations;  -- db/views.sql",
+        "options": {}
+      },
+      "id": "d618696f-ca09-52a5-b8fb-e5c6cf5bee36",
+      "name": "Run metrics/student/07_escalations.sql",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "Nudge student + flag advisor",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "nudge"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "Message parent + start 2-week sprint",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "sprint"
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.action}}",
+                    "rightValue": "Trigger tutor support",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "tutor"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a473912a-7327-59c0-a9e0-057ab02e3562",
+      "name": "Route by action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.ALCOVIA_APP_API}}/v1/push/nudge",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"student_id\": \"{{$json.student_id}}\", \"text\": \"{{$json.subject}} is {{Math.abs($json.pace_gap)}} pts behind plan. 2 focus sessions this week closes it.\"}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "1ebc3891-11f5-57f5-8ef3-a33b04ce09b4",
+      "name": "In-app nudge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        140
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "Alcovia app API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{$env.WA_PHONE_ID}}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"messaging_product\": \"whatsapp\", \"to\": \"{{$json.parent_phone}}\", \"type\": \"template\", \"template\": {\"name\": \"syllabus_sprint\", \"language\": {\"code\": \"en\"}}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "94b6fc17-f443-52e1-85d1-413cb5ee4986",
+      "name": "WhatsApp parent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "WhatsApp Cloud API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO alcovia.sprints (student_id, subject, triggered_on, pace_gap) VALUES ('{{$json.student_id}}', '{{$json.subject}}', CURRENT_DATE, {{$json.pace_gap}});",
+        "options": {}
+      },
+      "id": "6c1da79c-d1ef-59bf-9238-8f32fbff6d02",
+      "name": "Open sprint",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.clickup.com/api/v2/list/{{$env.CLICKUP_ADVISOR_LIST_ID}}/task",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"name\": \"Tutor support: {{$json.display_name}} \u2013 {{$json.subject}}\", \"assignees\": [], \"description\": \"Pace gap {{$json.pace_gap}} pts for two months. Trigger pre-agreed tutor.\"}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "3a94dd02-d275-5744-b773-07aa5b3477ab",
+      "name": "ClickUp task: tutor support",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        460
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "ClickUp API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Mondays 07:00": {
+      "main": [
+        [
+          {
+            "node": "Run metrics/student/07_escalations.sql",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run metrics/student/07_escalations.sql": {
+      "main": [
+        [
+          {
+            "node": "Route by action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by action": {
+      "main": [
+        [
+          {
+            "node": "In-app nudge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp parent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ClickUp task: tutor support",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp parent": {
+      "main": [
+        [
+          {
+            "node": "Open sprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "tags": [
+    {
+      "name": "alcovia"
+    }
+  ]
+}

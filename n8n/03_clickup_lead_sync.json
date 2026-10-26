@@ -1,0 +1,226 @@
+{
+  "name": "ClickUp leads \u2192 leads & funnel (on status change)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ClickUp leads \u2192 leads & funnel (on status change)\nKeeps the funnel live: every ClickUp status change updates the lead and logs the stage with its date. A discovery-call no-show triggers a Smallest.ai rebooking call within minutes.",
+        "width": 420,
+        "height": 220
+      },
+      "id": "1671f3e3-524b-539b-aa90-b727b92a2e96",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "team": "={{$env.CLICKUP_TEAM_ID}}",
+        "events": [
+          "taskStatusUpdated",
+          "taskCreated"
+        ],
+        "filters": {
+          "listId": "={{$env.CLICKUP_LEADS_LIST_ID}}"
+        }
+      },
+      "id": "95794397-e99e-52d1-9f3b-c17ce9a71fc9",
+      "name": "ClickUp status changed",
+      "type": "n8n-nodes-base.clickUpTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "credentials": {
+        "clickUpApi": {
+          "id": "3",
+          "name": "ClickUp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.clickup.com/api/v2/task/{{$json.task_id}}?include_subtasks=false",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "24cb0d2c-bdc3-5a05-9cb6-dde332742555",
+      "name": "Get task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "ClickUp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const t = $input.first().json;\nconst field = (n) => (t.custom_fields.find(f => f.name === n) || {}).value ?? null;\nconst stages = ['Lead','Qualified','Discovery call set','Discovery call attended','Ambition interview','Architect session','Signed up'];\nconst status = t.status.status;                        // ClickUp statuses mirror the funnel stages + 'Lost'\nconst idx = stages.indexOf(status);\nreturn [{ json: {\n  lead_id: t.id, created_on: new Date(Number(t.date_created)).toISOString().slice(0,10),\n  channel: field('utm_source') ? 'Meta' : (field('Referral') ? 'Referral' : 'Organic'),\n  campaign: field('utm_campaign') || '(organic)', ad_set: field('utm_term') || '(none)', asset: field('utm_content') || '(none)',\n  stage_index: idx >= 0 ? idx : Number(field('Furthest stage') || 0),\n  outcome: status === 'Signed up' ? 'Signed up' : status === 'Lost' ? 'Lost' : 'Open',\n  lost_reason: field('Lost reason'), plan: field('Plan'),\n  closed_on: ['Signed up','Lost'].includes(status) ? new Date().toISOString().slice(0,10) : null,\n  no_show: status === 'Discovery no-show', phone: field('Parent phone')\n}}];"
+      },
+      "id": "f9bf3fc9-8898-5971-81ba-890f409806c9",
+      "name": "Map task to lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO alcovia.leads (lead_id, created_on, channel, campaign, ad_set, asset, stage_index, outcome, lost_reason, plan, closed_on)\nVALUES ('{{$json.lead_id}}', '{{$json.created_on}}', '{{$json.channel}}', '{{$json.campaign}}', '{{$json.ad_set}}', '{{$json.asset}}', {{$json.stage_index}},\n        '{{$json.outcome}}', NULLIF('{{$json.lost_reason}}','null'), NULLIF('{{$json.plan}}','null'), NULLIF('{{$json.closed_on}}','null')::date)\nON CONFLICT (lead_id) DO UPDATE SET stage_index = GREATEST(alcovia.leads.stage_index, EXCLUDED.stage_index),\n  outcome = EXCLUDED.outcome, lost_reason = EXCLUDED.lost_reason, plan = EXCLUDED.plan, closed_on = EXCLUDED.closed_on;\nINSERT INTO alcovia.lead_stage_events VALUES ('{{$json.lead_id}}', {{$json.stage_index}}, CURRENT_DATE) ON CONFLICT DO NOTHING;",
+        "options": {}
+      },
+      "id": "b3395a7c-1527-5747-9aa6-e00e517300e0",
+      "name": "Upsert lead + stage event",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.no_show}}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "cf235ad8-65bb-5b10-b393-855999ecfffd",
+      "name": "Discovery no-show?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.smallest.ai/v1/calls",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"to\": \"{{$json.phone}}\", \"agent_id\": \"{{$env.SMALLEST_REBOOK_AGENT}}\", \"metadata\": {\"lead_id\": \"{{$json.lead_id}}\"}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "f3377250-fcea-5538-b4ae-d12e7f132628",
+      "name": "Smallest.ai rebooking call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        220
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "Smallest.ai API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "ClickUp status changed": {
+      "main": [
+        [
+          {
+            "node": "Get task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get task": {
+      "main": [
+        [
+          {
+            "node": "Map task to lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map task to lead": {
+      "main": [
+        [
+          {
+            "node": "Upsert lead + stage event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert lead + stage event": {
+      "main": [
+        [
+          {
+            "node": "Discovery no-show?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discovery no-show?": {
+      "main": [
+        [
+          {
+            "node": "Smallest.ai rebooking call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "tags": [
+    {
+      "name": "alcovia"
+    }
+  ]
+}

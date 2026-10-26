@@ -1,0 +1,197 @@
+{
+  "name": "GTM daily alerts: unpaid invoices, renewals, ad sets (09:00)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## GTM daily alerts: unpaid invoices, renewals, ad sets (09:00)\nOne morning digest in the GTM ClickUp channel: invoices unpaid at day 7 and 15, trials 21 days from ending with no renewal call, and every ad set whose rule says scale / refresh / fix / kill.",
+        "width": 420,
+        "height": 220
+      },
+      "id": "1671f3e3-524b-539b-aa90-b727b92a2e96",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "dfe22609-f623-5c9b-8e09-6de220a9b3a7",
+      "name": "Daily 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT invoice_id, family, amount_inr, owner, CURRENT_DATE - issued_on AS days_open\nFROM alcovia.invoices WHERE status = 'Unpaid' AND CURRENT_DATE - issued_on IN (7, 15);",
+        "options": {}
+      },
+      "id": "9282e35c-ce17-5ed7-ab6b-6c6289e49461",
+      "name": "Unpaid on day 7 or 15",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT family, trial_end, advisor FROM alcovia.trials\nWHERE trial_end = CURRENT_DATE + 21 AND renewal_call = 'Not booked';",
+        "options": {}
+      },
+      "id": "001812cd-cdbf-59a1-a11a-7a334ee89c9c",
+      "name": "Trials ending in 21 days, no call booked",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- view defined in db/views.sql (= metrics/gtm/09 over the last 7 days)\nSELECT ad_set_key, action FROM alcovia.v_adset_actions_7d WHERE action IN ('Kill','Refresh','Fix LP','Scale');",
+        "options": {}
+      },
+      "id": "ba4fd28b-c11e-5541-b2e8-609a863267b1",
+      "name": "Ad sets needing action (see metrics/gtm/09)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const msgs = [];\nfor (const r of $('Unpaid on day 7 or 15').all()) msgs.push(`${r.json.owner}: invoice ${r.json.invoice_id} (${r.json.family}, Rs ${r.json.amount_inr}) unpaid for ${r.json.days_open} days.`);\nfor (const r of $('Trials ending in 21 days, no call booked').all()) msgs.push(`${r.json.advisor}: ${r.json.family}'s trial ends ${r.json.trial_end}; no renewal call booked.`);\nfor (const r of $('Ad sets needing action (see metrics/gtm/09)').all()) msgs.push(`Marketing: ${r.json.action} -> ${r.json.ad_set_key}`);\nreturn msgs.length ? [{ json: { text: msgs.join('\\n') } }] : [];"
+      },
+      "id": "c27f4689-a613-5522-b681-8cfd033e0d18",
+      "name": "Build messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.clickup.com/api/v3/workspaces/{{$env.CLICKUP_TEAM_ID}}/chat/channels/{{$env.CLICKUP_GTM_CHANNEL}}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"content\": {{JSON.stringify($json.text)}}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "c6670cdb-ee53-54bf-b249-9177a7b6e947",
+      "name": "Post to ClickUp chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        320
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "ClickUp API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 09:00": {
+      "main": [
+        [
+          {
+            "node": "Unpaid on day 7 or 15",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trials ending in 21 days, no call booked",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ad sets needing action (see metrics/gtm/09)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ad sets needing action (see metrics/gtm/09)": {
+      "main": [
+        [
+          {
+            "node": "Build messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build messages": {
+      "main": [
+        [
+          {
+            "node": "Post to ClickUp chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "tags": [
+    {
+      "name": "alcovia"
+    }
+  ]
+}

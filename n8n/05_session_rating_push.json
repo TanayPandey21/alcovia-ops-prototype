@@ -1,0 +1,185 @@
+{
+  "name": "Sessions \u2192 held/attended + 1-tap rating push (every 10 min)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Sessions \u2192 held/attended + 1-tap rating push (every 10 min)\nCaptures Conducted and Liked with no typing: each session that ended is logged as held / attended from Google Calendar, then the app pushes a 1-tap rating 10 minutes after; the app writes the answer back to activity_log.rating.",
+        "width": 420,
+        "height": 220
+      },
+      "id": "1671f3e3-524b-539b-aa90-b727b92a2e96",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "423fa78a-0558-5067-9164-016d8fef4b22",
+      "name": "Every 10 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{$env.ALCOVIA_SESSIONS_CALENDAR}}"
+        },
+        "timeMin": "={{$now.minus({minutes: 20}).toISO()}}",
+        "timeMax": "={{$now.minus({minutes: 10}).toISO()}}",
+        "options": {
+          "singleEvents": true
+        }
+      },
+      "id": "e4da7adc-88df-5165-b1bb-f70c178669bb",
+      "name": "Events ended in last 10 min",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "4",
+          "name": "Google Calendar"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Event titles follow '<Activity> | <level>'; attendees carry student emails mapped in the app.\nconst out = [];\nfor (const ev of $input.all().map(i => i.json)) {\n  const [activity, level] = ev.summary.split('|').map(s => s.trim());\n  for (const a of (ev.attendees || []).filter(a => a.email.endsWith('@students.alcovia.life'))) {\n    out.push({ json: { day: ev.start.dateTime.slice(0,10), activity, level: level || 'Week', email: a.email,\n      held: ev.status !== 'cancelled', attended: a.responseStatus === 'accepted' } });   // Meet attendance report overrides when available\n  }\n}\nreturn out;"
+      },
+      "id": "fe84ea70-ce85-5f79-bbe8-68e3609d9002",
+      "name": "One row per invited Alcovian",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO alcovia.activity_log (day, activity, level, student_id, held, attended)\nSELECT '{{$json.day}}', '{{$json.activity}}', '{{$json.level}}', student_id, {{$json.held}}, {{$json.attended}}\nFROM alcovia.students WHERE student_id = split_part('{{$json.email}}', '@', 1)   -- student email = <student_id>@students.alcovia.life\nRETURNING activity_id, student_id;",
+        "options": {}
+      },
+      "id": "69d80092-f739-50f6-81c7-da2d9fafe3c4",
+      "name": "Log activity",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.ALCOVIA_APP_API}}/v1/push/rating",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"student_id\": \"{{$json.student_id}}\", \"activity_id\": {{$json.activity_id}}, \"question\": \"How useful was this session?\", \"scale\": 5}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "1e62448c-aaa7-548d-975c-64075aa42598",
+      "name": "Push 1-tap rating",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "Alcovia app API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 10 minutes": {
+      "main": [
+        [
+          {
+            "node": "Events ended in last 10 min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Events ended in last 10 min": {
+      "main": [
+        [
+          {
+            "node": "One row per invited Alcovian",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One row per invited Alcovian": {
+      "main": [
+        [
+          {
+            "node": "Log activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log activity": {
+      "main": [
+        [
+          {
+            "node": "Push 1-tap rating",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "tags": [
+    {
+      "name": "alcovia"
+    }
+  ]
+}

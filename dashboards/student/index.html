@@ -1,0 +1,573 @@
+<style>
+#dash-root { --dash-gutter: clamp(12px, 3vw, 32px); }
+.s-wrap { max-width: 1240px; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+.s-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--cds-gap-md); padding-block: var(--cds-pad-md) var(--cds-pad-lg); border-bottom: 1px solid var(--color-border-line); }
+.s-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; line-height: 1.2; }
+.s-take { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); max-width: 64ch; }
+.s-take b { color: var(--color-fg); font-weight: 600; }
+.s-ctrl { display: flex; gap: var(--cds-gap-md); flex-wrap: wrap; }
+.s-ctrl div { display: flex; flex-direction: column; gap: 4px; }
+.s-ctrl label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.s-ctrl select { font: inherit; padding: 6px 10px; border-radius: var(--cds-radius); border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); min-width: 10rem; }
+.s-nav { display: flex; gap: var(--cds-gap-xs); flex-wrap: wrap; padding-block: var(--cds-pad-md); position: sticky; top: 0; z-index: 2; background: var(--color-bg); }
+.s-nav a { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-decoration: none; padding: 4px 10px; border: 1px solid var(--color-border-line); border-radius: 999px; }
+.s-sec { margin-top: var(--cds-gap-xl); scroll-margin-top: 56px; }
+.s-sec > h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 4px; }
+.s-note { margin: 0 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.s-grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--cds-gap-md); }
+.s-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: var(--cds-gap-md); }
+.s-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+.s-card h3 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+.s-cn { margin: 2px 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.s-lens { font-size: var(--cds-font-size-caption); text-transform: uppercase; letter-spacing: .06em; color: var(--color-fg-muted); }
+.s-sc { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.s-sc td { padding: 9px 0; border-top: 1px solid var(--cds-chart-grid); vertical-align: middle; }
+.s-sc th { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); text-align: left; padding-bottom: 4px; }
+.s-sc .v { font-family: var(--font-anthropic-serif); font-size: 1.35rem; text-align: right; white-space: nowrap; }
+.s-sc .t { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-align: right; white-space: nowrap; padding-left: 10px; }
+.s-dot { display: inline-block; width: .55rem; height: .55rem; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+.s-dot.Green { background: var(--color-ok); } .s-dot.Amber { background: var(--color-warn); } .s-dot.Red { background: var(--color-bad); } .s-dot.None { background: var(--cds-chart-muted); }
+.s-chart { position: relative; min-height: 260px; }
+.s-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: 8px; }
+.s-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.s-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.s-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; z-index: 3; }
+.s-tip .h { color: var(--cds-text-secondary); margin-bottom: 2px; }
+.s-tip .r { display: flex; gap: 6px; align-items: center; } .s-tip .r i { width: 8px; height: 8px; border-radius: 2px; } .s-tip .r b { margin-left: auto; padding-left: 12px; }
+.s-tw { overflow: auto; max-height: 30rem; }
+.s-tbl { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.s-tbl th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.s-tbl td { padding: 7px 8px; border-bottom: 1px solid var(--cds-chart-grid); }
+.s-tbl .num { text-align: right; white-space: nowrap; }
+.s-tbl tr.click { cursor: pointer; } .s-tbl tr.click:hover td { background: var(--cds-chart-reference-tint); }
+.s-tbl tr.sel td { background: var(--cds-chart-reference-tint); }
+.s-bad { color: var(--color-bad); font-weight: 600; } .s-ok { color: var(--color-ok); } .s-warn { color: var(--color-warn); }
+.s-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--cds-gap-sm); margin-bottom: var(--cds-gap-md); }
+.s-tile { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-sm) var(--cds-pad-md); }
+.s-tile .l { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.s-tile .b { font-family: var(--font-anthropic-serif); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.s-sub { display: grid; grid-template-columns: minmax(5.5rem, 7rem) 1fr 4.5rem; gap: 8px; align-items: center; font-size: var(--cds-font-size-caption); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.s-trk { position: relative; height: 14px; background: var(--cds-chart-grid); border-radius: 4px; }
+.s-trk .f { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.s-trk .e { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--color-fg); }
+.s-points { margin: 0; padding-left: 1.1rem; font-size: var(--cds-font-size-body); }
+.s-points li { margin-bottom: 6px; }
+.s-foot { margin: var(--cds-gap-xl) 0 var(--cds-gap-lg); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+[data-dash-source-state=empty] { color: transparent; }
+.s-fail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 120px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.s-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+</style>
+
+<div class="s-wrap">
+  <header class="s-head" id="top">
+    <div>
+      <h1 class="s-title">Alcovia student progress</h1>
+      <p class="s-take">
+        <span data-source="cohort" data-field="label" data-per>—</span>:
+        <b data-source="cohort" data-field="green" data-per>—</b> of <span data-source="cohort" data-field="students" data-per>—</span> Alcovians are on track,
+        <b data-source="cohort" data-field="red" data-per>—</b> need attention this week, and the average student spent
+        <b data-source="cohort" data-field="app_min_day" data-per data-fmt="min">—</b> a day in the app against a 30-minute goal.
+      </p>
+    </div>
+    <div class="s-ctrl">
+      <div><label for="s-period">Period</label><select id="s-period" data-source="periods"></select></div>
+      <div><label for="s-advisor">Advisor</label><select id="s-advisor" data-source="students"></select></div>
+    </div>
+  </header>
+
+  <nav class="s-nav" aria-label="Sections">
+    <a href="#scorecard">Scorecard</a><a href="#adoption">App adoption</a><a href="#activities">Every activity</a><a href="#students">Students</a><a href="#student360">Student 360</a>
+  </nav>
+
+  <section class="s-sec" id="scorecard">
+    <h2>Cohort scorecard</h2>
+    <p class="s-note">Four or five KPIs per lens. Green meets target, amber is between target and the red line, red is past it.</p>
+    <div class="s-grid3">
+      <div class="s-card" id="sc-conducted"><div class="s-lens">Did Alcovia conduct it?</div><h3>Conducted</h3><p class="s-cn">Quantity: did we deliver what we promised?</p>
+        <table class="s-sc" data-source="scorecard" data-row-key="period,kpi"><thead><tr><th data-field="kpi">KPI</th><th data-field="value" style="text-align:right">Now</th><th data-field="target" style="text-align:right">Target</th></tr></thead><tbody data-lens="Conducted"></tbody></table></div>
+      <div class="s-card" id="sc-liked"><div class="s-lens">Did Alcovians like it?</div><h3>Liked</h3><p class="s-cn">Quality: did they show up, rate it and recommend it?</p>
+        <table class="s-sc" data-source="scorecard" data-row-key="period,kpi"><thead><tr><th data-field="kpi">KPI</th><th data-field="value" style="text-align:right">Now</th><th data-field="target" style="text-align:right">Target</th></tr></thead><tbody data-lens="Liked"></tbody></table></div>
+      <div class="s-card" id="sc-performed"><div class="s-lens">How did Alcovians perform?</div><h3>Performed</h3><p class="s-cn">Outcomes: academics, habits and growth.</p>
+        <table class="s-sc" data-source="scorecard" data-row-key="period,kpi"><thead><tr><th data-field="kpi">KPI</th><th data-field="value" style="text-align:right">Now</th><th data-field="target" style="text-align:right">Target</th></tr></thead><tbody data-lens="Performed"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="s-sec" id="adoption">
+    <h2>App adoption</h2>
+    <p class="s-note">Average minutes in the app per enrolled student per day, by week, with focus-mode minutes shown separately. The dashed line is the 30-minute goal.</p>
+    <div class="s-card">
+      <h3>Minutes per student per day</h3>
+      <p class="s-cn">All 20 Alcovians, including days they did not open the app.</p>
+      <div class="s-legend" id="ad-legend"></div>
+      <div class="s-chart" id="ad-chart" data-source="weekly"></div>
+    </div>
+  </section>
+
+  <section class="s-sec" id="activities">
+    <h2>Every activity, three lenses</h2>
+    <p class="s-note">One row per activity in the Alcovia rigour, for the selected period. Ratings are 1-tap, 1–5, sent 10 minutes after each session.</p>
+    <div class="s-card">
+      <div class="s-tw">
+        <table class="s-tbl" id="act-table" data-source="activities" data-row-key="period,activity">
+          <thead><tr><th data-field="activity">Activity</th><th data-field="level">Level</th><th class="num" data-field="delivery">Conducted</th><th class="num" data-field="attendance">Attendance</th><th class="num" data-field="rating">Liked</th><th data-field="perf_label">Performance measure</th><th class="num" data-field="perf_value">Result</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="s-sec" id="students">
+    <h2>Students</h2>
+    <p class="s-note">Health score out of 100: academics 40, habits 25, wellbeing 15, growth 20. Click a row to open that Alcovian below.</p>
+    <div class="s-card">
+      <div class="s-tw">
+        <table class="s-tbl" id="stu-table" data-source="student_kpis" data-row-key="period,student">
+          <thead><tr><th data-field="student">Alcovian</th><th data-field="advisor">Advisor</th><th class="num" data-field="health">Health</th><th class="num" data-field="app_min_day">App min/day</th><th class="num" data-field="focus_min_day">Focus min/day</th><th class="num" data-field="quiz_participation">Quiz</th><th class="num" data-field="task_completion">Tasks done</th><th class="num" data-field="readiness">Readiness</th><th class="num" data-field="pace_gap">Pace gap</th><th class="num" data-field="sleep_h">Sleep</th><th data-field="flag">Flag</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="s-sec" id="student360">
+    <h2>Student 360: <span id="s360-name">—</span></h2>
+    <p class="s-note">What the advisor opens in the weekly call. Talking points are drafted from the numbers.</p>
+    <div class="s-tiles" id="s360-tiles">
+      <div class="s-tile"><div class="l">Health score</div><div class="b" data-source="student_kpis" data-field="health" data-stu>—</div></div>
+      <div class="s-tile"><div class="l">Readiness</div><div class="b" data-source="student_kpis" data-field="readiness" data-stu data-fmt="int">—</div></div>
+      <div class="s-tile"><div class="l">Pace gap</div><div class="b" data-source="student_kpis" data-field="pace_gap" data-stu data-fmt="pts">—</div></div>
+      <div class="s-tile"><div class="l">Focus min/day</div><div class="b" data-source="student_kpis" data-field="focus_min_day" data-stu data-fmt="min">—</div></div>
+      <div class="s-tile"><div class="l">Tasks on time</div><div class="b" data-source="student_kpis" data-field="deadline_adherence" data-stu data-fmt="pct">—</div></div>
+      <div class="s-tile"><div class="l">Time-estimate accuracy</div><div class="b" data-source="student_kpis" data-field="estimate_accuracy" data-stu data-fmt="pct">—</div></div>
+      <div class="s-tile"><div class="l">Sleep</div><div class="b" data-source="student_kpis" data-field="sleep_h" data-stu data-fmt="hrs">—</div></div>
+      <div class="s-tile"><div class="l">Session rating</div><div class="b" data-source="student_kpis" data-field="rating" data-stu data-fmt="rate">—</div></div>
+    </div>
+    <div class="s-grid2">
+      <div class="s-card">
+        <h3>Syllabus by subject</h3>
+        <p class="s-cn">Bar = completion with full rigour; black tick = where they should be by today; number = readiness.</p>
+        <div id="s360-subjects" data-source="subjects" style="min-height: 180px;"></div>
+      </div>
+      <div class="s-card">
+        <h3>Talking points for this week</h3>
+        <p class="s-cn">Drafted automatically; the advisor edits before the call.</p>
+        <ul class="s-points" id="s360-points" data-source="student_kpis"></ul>
+        <h3 style="margin-top: var(--cds-gap-lg);">Focus minutes per day, by week</h3>
+        <div class="s-chart" id="s360-trend" data-source="student_weekly" style="min-height: 160px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="s-foot">All figures are sample data for 20 made-up Alcovians, invented to show the design (they are not Alcovia's real numbers). In production the sources are the app's own events, Google Calendar and Meet attendance, wearable APIs (HealthKit, Health Connect, WHOOP, Garmin), the in-app quiz and 1-tap ratings, and ClickUp notes, synced by n8n into one Postgres database.</p>
+</div>
+
+<script>
+dash.calc('periods', {
+  title: 'Period options',
+  description: 'The period choices, ending on the sample data’s last day (25 Oct 2026).',
+  inputs: ['students'],
+  fn: (students) => [
+    {period: 'd7', label: 'Last 7 days', start: '2026-10-19', end: '2026-10-25', days: 7},
+    {period: 'd30', label: 'Last 30 days', start: '2026-09-26', end: '2026-10-25', days: 30},
+    {period: 'd90', label: 'Last 90 days', start: '2026-07-28', end: '2026-10-25', days: 90},
+  ],
+});
+
+dash.calc('student_kpis', {
+  title: 'Per-student KPIs by period',
+  description: 'Each Alcovian’s habits, academics, wellbeing and growth for each period, with a health score (academics 40, habits 25, wellbeing 15, growth 20), a flag and drafted talking points.',
+  inputs: ['periods', 'students', 'daily', 'sessions', 'chapters', 'roadmaps'],
+  fn: (periods, students, daily, sessions, chapters, roadmaps) => {
+    const clamp = (x) => Math.max(0, Math.min(1, x));
+    const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
+    const out = [];
+    periods.forEach((p) => {
+      const snapDate = chapters.filter((c) => c.week_end <= p.end).reduce((m, c) => (c.week_end > m ? c.week_end : m), '');
+      students.forEach((s) => {
+        const D = daily.filter((r) => r.student === s.student && r.date >= p.start && r.date <= p.end);
+        const S = sessions.filter((r) => r.student === s.student && r.date >= p.start && r.date <= p.end);
+        const C = chapters.filter((c) => c.student === s.student && c.week_end === snapDate);
+        const R = roadmaps.filter((r) => r.student === s.student);
+        const sum = (f) => D.reduce((t, r) => t + (Number(r[f]) || 0), 0);
+        const planned = sum('tasks_planned'), done = sum('tasks_done'), onTime = sum('tasks_on_time'), est = sum('est_min'), act = sum('actual_min');
+        const sleepRows = D.filter((r) => r.sleep_h != null);
+        const ratings = S.filter((r) => r.rating != null);
+        const readiness = C.length ? C.reduce((t, c) => t + c.readiness, 0) / C.length : null;
+        const pace = C.length ? C.reduce((t, c) => t + c.completion_pct - c.expected_pct, 0) / C.length : null;
+        const weakest = C.slice().sort((a, b) => (a.completion_pct - a.expected_pct) - (b.completion_pct - b.expected_pct))[0];
+        const focus = sum('focus_min') / p.days, app = sum('app_min') / p.days;
+        const quiz = sum('quiz_taken') / p.days;
+        const tc = planned ? done / planned : null, da = planned ? onTime / planned : null;
+        const ea = est ? clamp(1 - Math.abs(act - est) / est) : null;
+        const sleep = sleepRows.length ? sleepRows.reduce((t, r) => t + r.sleep_h, 0) / sleepRows.length : null;
+        const due = R.reduce((t, r) => t + r.milestones_due, 0), ok = R.reduce((t, r) => t + r.milestones_on_time, 0);
+        const roadmapOnTime = due ? ok / due : null;
+        const health = Math.round(40 * (0.5 * (readiness || 0) / 100 + 0.5 * clamp(((pace || 0) + 20) / 30)) + 25 * ((tc || 0) + clamp(focus / 60)) / 2 + 15 * (sleep == null ? 0.7 : clamp(sleep / 8)) + 20 * (roadmapOnTime || 0));
+        let flag = 'On track';
+        if (pace != null && pace < -10) flag = 'Behind on syllabus';
+        else if (app < 5) flag = 'Barely using the app';
+        else if (quiz < 0.3) flag = 'Skipping the daily quiz';
+        else if (sleep != null && sleep < 7) flag = 'Sleeping under 7 h';
+        else if (tc != null && tc < 0.5) flag = 'Low task completion';
+        const pts = [];
+        if (weakest) pts.push(weakest.subject + ' is the weakest subject: ' + Math.round(weakest.completion_pct) + '% done vs ' + Math.round(weakest.expected_pct) + '% expected. Agree a 2-week sprint and the chapters it covers.');
+        pts.push('Focus averaged ' + Math.round(focus) + ' min a day against the 120-minute goal' + (focus < 30 ? '; book two fixed self-study slots in the timetable.' : '.'));
+        if (tc != null) pts.push('Finished ' + Math.round(tc * 100) + '% of planned tasks, ' + Math.round((da || 0) * 100) + '% on time' + (ea != null && ea < 0.7 ? '; time estimates are off, so plan in 25-minute blocks.' : '.'));
+        if (sleep != null && sleep < 7) pts.push('Sleep averaged ' + sleep.toFixed(1) + ' h; check late-night screen time.');
+        if (quiz < 0.3) pts.push('Took the 8 pm quiz on ' + Math.round(quiz * 100) + '% of nights; pair with a squad-mate.');
+        out.push({
+          period: p.period, student: s.student, advisor: s.advisor, segment: s.segment, wearable: s.wearable,
+          health, rag: health >= 70 ? 'Green' : health >= 55 ? 'Amber' : 'Red',
+          app_min_day: r1(app), focus_min_day: r1(focus), quiz_participation: quiz,
+          task_completion: tc, deadline_adherence: da, estimate_accuracy: ea,
+          readiness: readiness == null ? null : Math.round(readiness), pace_gap: r1(pace),
+          sleep_h: r1(sleep), rating: ratings.length ? r1(ratings.reduce((t, r) => t + r.rating, 0) / ratings.length) : null,
+          roadmap_on_time: roadmapOnTime, flag, talking_points: pts.slice(0, 4).join(' | '),
+        });
+      });
+    });
+    return out;
+  },
+});
+
+dash.calc('cohort', {
+  title: 'Cohort summary by period',
+  description: 'How many Alcovians are green, amber or red, and average app minutes a day, for each period (all advisors).',
+  inputs: ['periods', 'student_kpis'],
+  fn: (periods, student_kpis) => periods.map((p) => {
+    const rows = student_kpis.filter((r) => r.period === p.period);
+    return {
+      period: p.period, label: p.label, students: rows.length,
+      green: rows.filter((r) => r.rag === 'Green').length, amber: rows.filter((r) => r.rag === 'Amber').length, red: rows.filter((r) => r.rag === 'Red').length,
+      app_min_day: Math.round(10 * rows.reduce((t, r) => t + r.app_min_day, 0) / rows.length) / 10,
+    };
+  }),
+});
+
+dash.calc('scorecard', {
+  title: 'Cohort scorecard by period',
+  description: 'The 12 cohort KPIs (four each for Conducted, Liked, Performed) with targets, red lines and status, for each period.',
+  inputs: ['periods', 'students', 'daily', 'quiz', 'sessions', 'chapters', 'roadmaps', 'pulse', 'student_kpis'],
+  fn: (periods, students, daily, quiz, sessions, chapters, roadmaps, pulse, student_kpis) => {
+    const out = [];
+    const mean = (a) => (a.length ? a.reduce((t, x) => t + x, 0) / a.length : null);
+    periods.forEach((p) => {
+      const S = sessions.filter((r) => r.date >= p.start && r.date <= p.end);
+      const Q = quiz.filter((r) => r.date >= p.start && r.date <= p.end);
+      const D = daily.filter((r) => r.date >= p.start && r.date <= p.end);
+      const K = student_kpis.filter((r) => r.period === p.period);
+      const held = S.filter((r) => r.held === 1);
+      const lastWeek = new Date(Date.parse(p.end) - 6 * 864e5).toISOString().slice(0, 10);
+      const covered = new Set(daily.filter((r) => r.date >= lastWeek && r.date <= p.end && r.active === 1).map((r) => r.student)).size;
+      const roadmapOk = students.filter((s) => roadmaps.filter((r) => r.student === s.student && r.current === 1).length === 3).length;
+      const sentDays = Q.filter((r) => r.quiz_sent === 1).length;
+      const months = p.period === 'd90' ? ['2026-08', '2026-09', '2026-10'] : ['2026-10'];
+      const PU = pulse.filter((r) => months.includes(r.month));
+      const nps = PU.length ? Math.round(100 * (PU.filter((r) => r.score >= 9).length - PU.filter((r) => r.score <= 6).length) / PU.length) : null;
+      const skills = held.filter((r) => r.skill_score != null).map((r) => r.skill_score);
+      const due = roadmaps.reduce((t, r) => t + r.milestones_due, 0), ok = roadmaps.reduce((t, r) => t + r.milestones_on_time, 0);
+      const habit = mean(K.map((r) => ((r.task_completion || 0) + (r.deadline_adherence || 0) + Math.min(1, r.focus_min_day / 120)) / 3));
+      const add = (lens, kpi, value, unit, target, red, high) => {
+        let status = 'None';
+        if (value != null) status = high ? (value >= target ? 'Green' : value >= red ? 'Amber' : 'Red') : (value <= target ? 'Green' : value <= red ? 'Amber' : 'Red');
+        out.push({period: p.period, lens, kpi, value, unit, target, red, status});
+      };
+      add('Conducted', 'Sessions delivered', S.length ? held.length / S.length : null, 'pct', 0.95, 0.85, true);
+      add('Conducted', 'Daily quiz run rate', Q.length ? sentDays / Q.length : null, 'pct', 1, 0.97, true);
+      add('Conducted', 'Roadmaps current', roadmapOk / students.length, 'pct', 1, 0.9, true);
+      add('Conducted', 'Data coverage (last 7 days)', covered / students.length, 'pct', 0.9, 0.75, true);
+      add('Liked', 'Average session rating', mean(held.filter((r) => r.rating != null).map((r) => r.rating)), 'rate', 4.3, 3.8, true);
+      add('Liked', 'Attendance', held.length ? held.filter((r) => r.attended === 1).length / held.length : null, 'pct', 0.9, 0.8, true);
+      add('Liked', 'Quiz participation', sentDays ? D.filter((r) => r.quiz_taken === 1).length / (sentDays * students.length) : null, 'pct', 0.7, 0.5, true);
+      add('Liked', 'Would recommend (NPS)', nps, 'nps', 50, 20, true);
+      add('Performed', 'Chapter readiness', mean(K.map((r) => r.readiness).filter((x) => x != null)), 'score', 75, 60, true);
+      add('Performed', 'Pace gap', mean(K.map((r) => r.pace_gap).filter((x) => x != null)), 'pts', 0, -10, true);
+      add('Performed', 'Habit score', habit, 'pct', 0.75, 0.6, true);
+      add('Performed', 'Soft-skill average', skills.length ? mean(skills) : null, 'rate', 3.8, 3.2, true);
+      add('Performed', 'Roadmap milestones on time', due ? ok / due : null, 'pct', 0.8, 0.6, true);
+    });
+    return out;
+  },
+});
+
+dash.calc('activities', {
+  title: 'Activities by period',
+  description: 'For every activity in the rigour: share delivered as planned, attendance, average rating, and its performance measure, for each period.',
+  inputs: ['periods', 'students', 'daily', 'quiz', 'sessions', 'chapters'],
+  fn: (periods, students, daily, quiz, sessions, chapters) => {
+    const out = [];
+    const mean = (a) => (a.length ? a.reduce((t, x) => t + x, 0) / a.length : null);
+    const order = ['Academic session 1', 'Academic session 2', 'Workshop 1 (career)', 'Workshop 2 (career)', 'Pod session', 'Peer session', 'Mentor call', 'Personal branding shoot', 'Podcast shoot', 'Competition prep', 'Parent-child workshop', 'Out-of-city experience'];
+    periods.forEach((p) => {
+      const D = daily.filter((r) => r.date >= p.start && r.date <= p.end);
+      const Q = quiz.filter((r) => r.date >= p.start && r.date <= p.end);
+      const sent = Q.filter((r) => r.quiz_sent === 1).length;
+      const scores = D.filter((r) => r.quiz_score != null).map((r) => r.quiz_score);
+      const slotsP = D.reduce((t, r) => t + r.slots_planned, 0), slotsD = D.reduce((t, r) => t + r.slots_done, 0);
+      const wearers = students.filter((s) => s.wearable !== 'None');
+      const synced = new Set(D.filter((r) => r.sleep_h != null).map((r) => r.student)).size;
+      const sleep = mean(D.filter((r) => r.sleep_h != null).map((r) => r.sleep_h));
+      const activeMin = mean(D.filter((r) => r.active_min != null).map((r) => r.active_min));
+      const planned = D.reduce((t, r) => t + r.tasks_planned, 0), done = D.reduce((t, r) => t + r.tasks_done, 0);
+      out.push({period: p.period, activity: 'Timetable (self-study slots)', level: 'Day', delivery: slotsP ? 1 : null, attendance: null, rating: null, perf_label: 'Slots done ÷ planned', perf_value: slotsP ? slotsD / slotsP : null, perf_unit: 'pct'});
+      out.push({period: p.period, activity: 'Daily quiz (8 pm)', level: 'Day', delivery: Q.length ? sent / Q.length : null, attendance: sent ? D.filter((r) => r.quiz_taken === 1).length / (sent * students.length) : null, rating: null, perf_label: 'Average score out of 10', perf_value: mean(scores), perf_unit: 'score10'});
+      out.push({period: p.period, activity: 'Focus time', level: 'Day', delivery: null, attendance: D.length ? D.filter((r) => r.focus_min > 0).length / D.length : null, rating: null, perf_label: 'Focus minutes per student per day', perf_value: D.length ? D.reduce((t, r) => t + r.focus_min, 0) / D.length : null, perf_unit: 'min'});
+      out.push({period: p.period, activity: 'Active minutes (wearables)', level: 'Day', delivery: wearers.length ? synced / wearers.length : null, attendance: null, rating: null, perf_label: 'Active minutes a day (goal 60)', perf_value: activeMin, perf_unit: 'min'});
+      out.push({period: p.period, activity: 'Recovery and sleep (wearables)', level: 'Day', delivery: wearers.length ? synced / wearers.length : null, attendance: null, rating: null, perf_label: 'Sleep hours a night (goal 8–10)', perf_value: sleep, perf_unit: 'hrs'});
+      const C1 = chapters.filter((c) => c.week_end <= p.end), C0 = chapters.filter((c) => c.week_end <= p.start);
+      const snap = (C) => { const d = C.reduce((m, c) => (c.week_end > m ? c.week_end : m), ''); return C.filter((c) => c.week_end === d); };
+      const rEnd = mean(snap(C1).map((c) => c.readiness)), rStart = C0.length ? mean(snap(C0).map((c) => c.readiness)) : null;
+      order.forEach((a) => {
+        const S = sessions.filter((r) => r.activity === a && r.date >= p.start && r.date <= p.end);
+        if (!S.length) return;
+        const held = S.filter((r) => r.held === 1);
+        const rated = held.filter((r) => r.rating != null).map((r) => r.rating);
+        const skills = held.filter((r) => r.skill_score != null).map((r) => r.skill_score);
+        let label = 'Tracked in ClickUp (not in sample)', value = null, unit = 'none';
+        if (a.startsWith('Academic')) { label = 'Task completion'; value = planned ? done / planned : null; unit = 'pct'; }
+        if (skills.length) { label = 'Soft-skill average (1–5)'; value = mean(skills); unit = 'rate'; }
+        if (a === 'Peer session') { label = 'Readiness change in period'; value = rStart == null ? null : rEnd - rStart; unit = 'pts'; }
+        out.push({period: p.period, activity: a, level: S[0].level, delivery: held.length / S.length, attendance: held.length ? held.filter((r) => r.attended === 1).length / held.length : null, rating: mean(rated), perf_label: label, perf_value: value, perf_unit: unit});
+      });
+    });
+    return out;
+  },
+});
+
+dash.calc('weekly', {
+  title: 'App minutes by week',
+  description: 'Average app minutes and focus minutes per enrolled student per day, and average daily active students, by week (weeks start Monday).',
+  inputs: ['daily'],
+  fn: (daily) => {
+    const g = {};
+    daily.forEach((r) => {
+      const d = new Date(r.date + 'T00:00:00Z');
+      const wk = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10);
+      const x = g[wk] || (g[wk] = {week: wk, app: 0, focus: 0, act: 0, n: 0, days: new Set()});
+      x.app += r.app_min; x.focus += r.focus_min; x.act += r.active; x.n += 1; x.days.add(r.date);
+    });
+    return Object.values(g).sort((a, b) => (a.week < b.week ? -1 : 1)).map((x) => ({week: x.week, app_min_day: Math.round(10 * x.app / x.n) / 10, focus_min_day: Math.round(10 * x.focus / x.n) / 10, daily_active: Math.round(10 * x.act / x.days.size) / 10}));
+  },
+});
+
+dash.calc('subjects', {
+  title: 'Latest subject status',
+  description: 'Each Alcovian’s latest snapshot per subject: completion with full rigour, expected completion by today, readiness and rigour adherence.',
+  inputs: ['chapters'],
+  fn: (chapters) => {
+    const last = chapters.reduce((m, c) => (c.week_end > m ? c.week_end : m), '');
+    return chapters.filter((c) => c.week_end === last).map((c) => ({student: c.student, subject: c.subject, completion_pct: c.completion_pct, expected_pct: c.expected_pct, readiness: c.readiness, rigour_adherence: c.rigour_adherence}));
+  },
+});
+
+dash.calc('student_weekly', {
+  title: 'Focus minutes by student and week',
+  description: 'Each Alcovian’s average focus minutes per day, by week (weeks start Monday).',
+  inputs: ['daily'],
+  fn: (daily) => {
+    const g = {};
+    daily.forEach((r) => {
+      const d = new Date(r.date + 'T00:00:00Z');
+      const wk = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 864e5).toISOString().slice(0, 10);
+      const k = r.student + '|' + wk;
+      const x = g[k] || (g[k] = {student: r.student, week: wk, f: 0, n: 0});
+      x.f += r.focus_min; x.n += 1;
+    });
+    return Object.values(g).map((x) => ({student: x.student, week: x.week, focus_min_day: Math.round(10 * x.f / x.n) / 10}));
+  },
+});
+</script>
+
+<script>
+(() => {
+  const pct = (v) => (v == null || isNaN(v) ? '—' : Math.round(v * 100) + '%');
+  const F = {
+    pct, int: (v) => (v == null ? '—' : String(Math.round(v))), min: (v) => (v == null ? '—' : Math.round(v) + ' min'),
+    hrs: (v) => (v == null ? '—' : v.toFixed(1) + ' h'), rate: (v) => (v == null ? '—' : v.toFixed(1)),
+    pts: (v) => (v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' pts'),
+    score: (v) => (v == null ? '—' : String(Math.round(v))), nps: (v) => (v == null ? '—' : (v >= 0 ? '+' : '') + Math.round(v)),
+    score10: (v) => (v == null ? '—' : v.toFixed(1)), none: () => '—',
+  };
+  window.sFmt = F;
+  if (!dash.params().period) dash.setParams({period: 'd30'});
+  const per = () => dash.params().period || 'd30';
+  const sel = document.getElementById('s-period');
+  const adv = document.getElementById('s-advisor');
+  sel.addEventListener('change', () => dash.setParams({period: sel.value}));
+  adv.addEventListener('change', () => dash.setParams({advisor: adv.value || null}));
+
+  dash.onData(() => {
+    const P = dash.data('periods');
+    if (P.status === 'ok') { sel.replaceChildren(...P.data.map((p) => new Option(p.label, p.period))); sel.value = per(); }
+    const St = dash.data('students');
+    if (St.status === 'ok') {
+      const names = [...new Set(St.data.map((s) => s.advisor))].sort();
+      adv.replaceChildren(new Option('All advisors', ''), ...names.map((n) => new Option(n, n)));
+      adv.value = dash.params().advisor || '';
+    }
+    const C = dash.data('cohort');
+    const row = C.status === 'ok' ? C.data.find((r) => r.period === per()) : null;
+    document.querySelectorAll('[data-per]').forEach((el) => {
+      el.setAttribute('data-where', 'period=' + per());
+      const f = el.getAttribute('data-field'), m = el.getAttribute('data-fmt');
+      el.textContent = row ? (m ? F[m](row[f]) : String(row[f])) : '—';
+    });
+    // scorecard
+    const SC = dash.data('scorecard');
+    document.querySelectorAll('tbody[data-lens]').forEach((tb) => {
+      if (SC.status !== 'ok') { tb.replaceChildren(); return; }
+      const rows = SC.data.filter((r) => r.period === per() && r.lens === tb.dataset.lens);
+      tb.replaceChildren(...rows.map((r) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = String(r.period).replace(/%/g, '%25').replace(/,/g, '%2C') + ',' + String(r.kpi).replace(/%/g, '%25').replace(/,/g, '%2C');
+        const a = document.createElement('td'); const dot = document.createElement('span'); dot.className = 's-dot ' + r.status; a.append(dot, document.createTextNode(r.kpi));
+        const b = document.createElement('td'); b.className = 'v'; b.textContent = F[r.unit](r.value);
+        const c = document.createElement('td'); c.className = 't'; c.textContent = F[r.unit](r.target);
+        tr.append(a, b, c); return tr;
+      }));
+    });
+  });
+})();
+</script>
+
+<script>
+// Adoption chart
+(() => {
+  const box = document.getElementById('ad-chart');
+  const leg = document.getElementById('ad-legend');
+  dash.onData(() => {
+    const W = dash.data('weekly');
+    const series = [['app_min_day', 'All app time', 0], ['focus_min_day', 'Focus mode', 1]];
+    leg.replaceChildren(...series.map(([, n, i]) => { const s = document.createElement('span'); const sw = document.createElement('i'); sw.style.background = dash.colors[i]; s.append(sw, document.createTextNode(n)); return s; }));
+    if (W.status === 'error') { box.replaceChildren(); const f = document.createElement('div'); f.className = 's-fail'; f.textContent = 'Failed to load'; box.append(f); return; }
+    if (W.status !== 'ok') { box.replaceChildren(); return; }
+    const data = W.data.map((r) => ({...r, d: new Date(r.week + 'T00:00:00Z')}));
+    const w = Math.max(280, box.clientWidth), h = 260, m = {t: 12, r: 92, b: 26, l: 40};
+    const x = d3.scaleUtc(d3.extent(data, (d) => d.d), [m.l, w - m.r]);
+    const y = d3.scaleLinear([0, Math.max(32, d3.max(data, (d) => d.app_min_day))], [h - m.b, m.t]).nice();
+    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`).attr('role', 'img').attr('aria-label', 'App minutes per student per day by week');
+    y.ticks(4).forEach((t) => {
+      svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', 'var(--cds-chart-grid)');
+      svg.append('text').attr('x', m.l - 6).attr('y', y(t) + 4).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(t + 'm');
+    });
+    svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(30)).attr('y2', y(30)).attr('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 4');
+    svg.append('text').attr('x', w - m.r + 6).attr('y', y(30) + 4).attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text('Goal 30 min');
+    const ticks = x.ticks(Math.max(2, Math.floor((w - m.l - m.r) / 90)));
+    ticks.forEach((t) => svg.append('text').attr('x', x(t)).attr('y', h - 8).attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(d3.utcFormat('%-d %b')(t)));
+    series.forEach(([k, n, i]) => {
+      svg.append('path').datum(data).attr('fill', 'none').attr('stroke', dash.colors[i]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', d3.line().x((d) => x(d.d)).y((d) => y(d[k])));
+      const last = data.at(-1);
+      svg.append('text').attr('x', x(last.d) + 6).attr('y', y(last[k]) + (k === 'app_min_day' ? -2 : 12)).attr('font-size', 11).attr('fill', 'var(--color-fg)').text(Math.round(last[k]) + ' min');
+    });
+    box.replaceChildren(svg.node());
+    const tip = document.createElement('div'); tip.className = 's-tip'; box.append(tip);
+    const dot = svg.append('g');
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', w - m.l - m.r).attr('height', h - m.t - m.b).attr('fill', 'transparent')
+      .on('mousemove', (ev) => {
+        const [px] = d3.pointer(ev);
+        const d = data[d3.leastIndex(data, (r) => Math.abs(x(r.d) - px))];
+        dot.selectAll('*').remove();
+        series.forEach(([k, , i]) => dot.append('circle').attr('cx', x(d.d)).attr('cy', y(d[k])).attr('r', 4).attr('fill', dash.colors[i]));
+        const hd = document.createElement('div'); hd.className = 'h'; hd.textContent = 'Week of ' + d3.utcFormat('%-d %b')(d.d);
+        const rows = series.map(([k, n, i]) => { const r = document.createElement('div'); r.className = 'r'; const sw = document.createElement('i'); sw.style.background = dash.colors[i]; const b = document.createElement('b'); b.textContent = d[k].toFixed(1) + ' min'; r.append(sw, document.createTextNode(n), b); return r; });
+        const da = document.createElement('div'); da.className = 'r'; const db = document.createElement('b'); db.textContent = d.daily_active.toFixed(1) + ' of 20'; da.append(document.createTextNode('Daily active'), db);
+        tip.replaceChildren(hd, ...rows, da);
+        const [bx, by] = d3.pointer(ev, box); let left = bx + 14; if (left + tip.offsetWidth > box.clientWidth) left = bx - tip.offsetWidth - 14;
+        tip.style.left = Math.max(0, left) + 'px'; tip.style.top = Math.max(0, by - 30) + 'px'; tip.style.opacity = 1;
+      })
+      .on('mouseleave', () => { tip.style.opacity = 0; dot.selectAll('*').remove(); });
+  });
+})();
+</script>
+
+<script>
+// Tables and Student 360
+(() => {
+  const F = window.sFmt;
+  const enc = (s) => String(s).replace(/%/g, '%25').replace(/,/g, '%2C');
+  const per = () => dash.params().period || 'd30';
+  const span = (txt, cls) => { const s = document.createElement('span'); s.textContent = txt; if (cls) s.className = cls; return s; };
+  const fill = (tb, rows, key, cells, onClick) => {
+    tb.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr'); tr.dataset.key = key(r);
+      if (onClick) { tr.className = 'click'; tr.addEventListener('click', () => onClick(r)); }
+      cells.forEach(([g, c]) => { const td = document.createElement('td'); if (c) td.className = c; const v = g(r); if (v instanceof Node) td.append(v); else td.textContent = v; tr.append(td); });
+      return tr;
+    }));
+  };
+  dash.onData(() => {
+    // activities
+    const A = dash.data('activities'); const at = document.querySelector('#act-table tbody');
+    if (A.status === 'ok') {
+      fill(at, A.data.filter((r) => r.period === per()), (r) => enc(r.period) + ',' + enc(r.activity), [
+        [(r) => r.activity], [(r) => r.level],
+        [(r) => (r.delivery == null ? '—' : span(F.pct(r.delivery), r.delivery < 0.85 ? 's-bad' : '')), 'num'],
+        [(r) => (r.attendance == null ? '—' : span(F.pct(r.attendance), r.attendance < 0.8 ? 's-bad' : '')), 'num'],
+        [(r) => (r.rating == null ? '—' : span(r.rating.toFixed(1) + ' / 5', r.rating < 3.8 ? 's-bad' : '')), 'num'],
+        [(r) => r.perf_label], [(r) => F[r.perf_unit](r.perf_value), 'num'],
+      ]);
+    } else at.replaceChildren();
+    // students
+    const K = dash.data('student_kpis'); const st = document.querySelector('#stu-table tbody');
+    const advisor = dash.params().advisor || null;
+    let rows = [];
+    if (K.status === 'ok') {
+      rows = K.data.filter((r) => r.period === per() && (!advisor || r.advisor === advisor)).sort((a, b) => a.health - b.health);
+      if (!dash.params().student && rows.length) dash.setParams({student: rows[0].student});
+      fill(st, rows, (r) => enc(r.period) + ',' + enc(r.student), [
+        [(r) => r.student], [(r) => r.advisor],
+        [(r) => { const s = document.createElement('span'); const d = document.createElement('span'); d.className = 's-dot ' + r.rag; s.append(d, document.createTextNode(String(r.health))); return s; }, 'num'],
+        [(r) => span(F.min(r.app_min_day), r.app_min_day < 5 ? 's-bad' : ''), 'num'], [(r) => F.min(r.focus_min_day), 'num'],
+        [(r) => span(F.pct(r.quiz_participation), r.quiz_participation < 0.3 ? 's-bad' : ''), 'num'], [(r) => F.pct(r.task_completion), 'num'],
+        [(r) => F.int(r.readiness), 'num'], [(r) => span(F.pts(r.pace_gap), r.pace_gap < -10 ? 's-bad' : r.pace_gap >= 0 ? 's-ok' : ''), 'num'],
+        [(r) => F.hrs(r.sleep_h), 'num'], [(r) => span(r.flag, r.flag === 'On track' ? 's-ok' : 's-warn')],
+      ], (r) => { dash.setParams({student: r.student}); document.getElementById('student360').scrollIntoView({behavior: 'smooth'}); dash.setLink('student360'); });
+      const cur = dash.params().student;
+      st.querySelectorAll('tr').forEach((tr) => tr.classList.toggle('sel', tr.firstChild.textContent === cur));
+    } else st.replaceChildren();
+    // 360
+    const who = dash.params().student;
+    document.getElementById('s360-name').textContent = who || '—';
+    const me = K.status === 'ok' ? K.data.find((r) => r.period === per() && r.student === who) : null;
+    document.querySelectorAll('[data-stu]').forEach((el) => {
+      el.setAttribute('data-where', 'period=' + per() + '&student=' + encodeURIComponent(who || ''));
+      const f = el.getAttribute('data-field'), m = el.getAttribute('data-fmt');
+      if (!me) { el.textContent = '—'; return; }
+      if (f === 'health') { el.replaceChildren(); const d = document.createElement('span'); d.className = 's-dot ' + me.rag; el.append(d, document.createTextNode(String(me.health))); return; }
+      el.textContent = F[m](me[f]);
+    });
+    const ul = document.getElementById('s360-points');
+    ul.replaceChildren(...(me ? me.talking_points.split(' | ') : []).map((t) => { const li = document.createElement('li'); li.textContent = t; return li; }));
+    // subjects
+    const S = dash.data('subjects'); const sb = document.getElementById('s360-subjects');
+    if (S.status === 'ok' && who) {
+      sb.replaceChildren(...S.data.filter((r) => r.student === who).map((r) => {
+        const row = document.createElement('div'); row.className = 's-sub';
+        const gap = r.completion_pct - r.expected_pct;
+        const trk = document.createElement('div'); trk.className = 's-trk';
+        const f = document.createElement('div'); f.className = 'f'; f.style.width = Math.min(100, r.completion_pct) + '%'; f.style.background = gap < -10 ? 'var(--cds-chart-status-critical)' : dash.colors[0];
+        const e = document.createElement('div'); e.className = 'e'; e.style.left = r.expected_pct + '%';
+        trk.append(f, e);
+        row.append(span(r.subject), trk, span(Math.round(r.completion_pct) + '% · R' + Math.round(r.readiness), gap < -10 ? 's-bad' : ''));
+        return row;
+      }));
+    } else sb.replaceChildren();
+    // weekly focus trend
+    const T = dash.data('student_weekly'); const tb = document.getElementById('s360-trend');
+    if (T.status === 'ok' && who) {
+      const data = T.data.filter((r) => r.student === who).sort((a, b) => (a.week < b.week ? -1 : 1)).map((r) => ({...r, d: new Date(r.week + 'T00:00:00Z')}));
+      const w = Math.max(260, tb.clientWidth), h = 160, m = {t: 10, r: 50, b: 22, l: 34};
+      const x = d3.scaleUtc(d3.extent(data, (d) => d.d), [m.l, w - m.r]);
+      const y = d3.scaleLinear([0, Math.max(60, d3.max(data, (d) => d.focus_min_day))], [h - m.b, m.t]).nice();
+      const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${h}`).attr('role', 'img').attr('aria-label', 'Focus minutes per day by week');
+      y.ticks(3).forEach((t) => { svg.append('line').attr('x1', m.l).attr('x2', w - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', 'var(--cds-chart-grid)'); svg.append('text').attr('x', m.l - 6).attr('y', y(t) + 4).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(t); });
+      x.ticks(Math.max(2, Math.floor((w - m.l - m.r) / 90))).forEach((t) => svg.append('text').attr('x', x(t)).attr('y', h - 6).attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(d3.utcFormat('%-d %b')(t)));
+      svg.append('path').datum(data).attr('fill', 'none').attr('stroke', dash.colors[1]).attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('d', d3.line().x((d) => x(d.d)).y((d) => y(d.focus_min_day)));
+      const last = data.at(-1);
+      if (last) svg.append('text').attr('x', x(last.d) + 6).attr('y', y(last.focus_min_day) + 4).attr('font-size', 11).attr('fill', 'var(--color-fg)').text(Math.round(last.focus_min_day) + ' min');
+      tb.replaceChildren(svg.node());
+    } else tb.replaceChildren();
+  });
+})();
+</script>

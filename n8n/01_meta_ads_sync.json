@@ -1,0 +1,142 @@
+{
+  "name": "Meta Ads \u2192 ad_daily (hourly)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Meta Ads \u2192 ad_daily (hourly)\nPulls the last 3 days of ad-level insights every hour (Meta revises recent days) and upserts them. Landing-page visits, submits and load time are filled by the daily GA4 + PageSpeed step in workflow 04.",
+        "width": 420,
+        "height": 220
+      },
+      "id": "1671f3e3-524b-539b-aa90-b727b92a2e96",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "aa54a097-b5c0-5e38-a38d-f9145ab3e321",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v21.0/act_{{$env.META_AD_ACCOUNT_ID}}/insights?level=ad&time_increment=1&date_preset=last_3d&fields=campaign_name,adset_name,ad_name,spend,impressions,reach,frequency,clicks&limit=500",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "60cf43fb-9998-507b-ac87-571cf6d841d1",
+      "name": "Get ad insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "Meta Ads token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Campaign names follow the naming rule: 'PRG ...' = program, 'WS ...' = workshop.\nconst rows = $input.first().json.data || [];\nreturn rows.map(r => ({ json: {\n  day: r.date_start,\n  campaign_type: r.campaign_name.startsWith('WS') ? 'Workshop' : 'Program',\n  campaign: r.campaign_name, ad_set: r.adset_name, asset: r.ad_name,\n  spend_inr: Math.round(Number(r.spend)), impressions: Number(r.impressions), reach: Number(r.reach),\n  frequency_7d: Number(r.frequency), clicks: Number(r.clicks)\n}}));"
+      },
+      "id": "da1818f5-06aa-5bb0-8639-14bf4982282e",
+      "name": "Map to ad_daily rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO alcovia.ad_daily (day, campaign_type, campaign, ad_set, asset, spend_inr, impressions, reach, frequency_7d, clicks, lp_visits, lp_submits)\nVALUES ('{{$json.day}}', '{{$json.campaign_type}}', '{{$json.campaign}}', '{{$json.ad_set}}', '{{$json.asset}}', {{$json.spend_inr}}, {{$json.impressions}}, {{$json.reach}}, {{$json.frequency_7d}}, {{$json.clicks}}, 0, 0)\nON CONFLICT (day, asset) DO UPDATE SET spend_inr = EXCLUDED.spend_inr, impressions = EXCLUDED.impressions,\n  reach = EXCLUDED.reach, frequency_7d = EXCLUDED.frequency_7d, clicks = EXCLUDED.clicks;",
+        "options": {}
+      },
+      "id": "0fe1d12e-f98b-5bbf-b982-bae384ce6486",
+      "name": "Upsert ad_daily",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        720,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Get ad insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get ad insights": {
+      "main": [
+        [
+          {
+            "node": "Map to ad_daily rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map to ad_daily rows": {
+      "main": [
+        [
+          {
+            "node": "Upsert ad_daily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "tags": [
+    {
+      "name": "alcovia"
+    }
+  ]
+}

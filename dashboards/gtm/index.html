@@ -1,0 +1,709 @@
+<style>
+#dash-root { --dash-gutter: clamp(12px, 3vw, 32px); }
+.g-wrap { max-width: 1240px; margin-inline: auto; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+.g-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--cds-gap-md); padding-block: var(--cds-pad-md) var(--cds-pad-lg); border-bottom: 1px solid var(--color-border-line); }
+.g-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; line-height: 1.2; }
+.g-take { margin: var(--cds-gap-xs) 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); max-width: 62ch; }
+.g-take b { color: var(--color-fg); font-weight: 600; }
+.g-ctrl { display: flex; flex-direction: column; gap: 4px; }
+.g-ctrl label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.g-ctrl select { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 10px; border-radius: var(--cds-radius); border: 1px solid var(--color-border-line); background: var(--color-panel); color: var(--color-fg); min-width: 13rem; }
+.g-ctrl .g-range { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.g-nav { display: flex; gap: var(--cds-gap-xs); flex-wrap: wrap; padding-block: var(--cds-pad-md); position: sticky; top: 0; z-index: 2; background: var(--color-bg); }
+.g-nav a { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); text-decoration: none; padding: 4px 10px; border: 1px solid var(--color-border-line); border-radius: 999px; }
+.g-nav a:hover { color: var(--color-fg); }
+.g-sec { margin-top: var(--cds-gap-xl); scroll-margin-top: 56px; }
+.g-sec > h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 4px; }
+.g-sec > p.g-note { margin: 0 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.g-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); gap: var(--cds-gap-md); }
+.g-tile { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md) var(--cds-pad-lg); display: flex; flex-direction: column; gap: 6px; min-height: 8.5rem; }
+.g-tl { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.g-big { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.g-sub { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.g-sub b { color: var(--color-fg); font-weight: 600; }
+.g-up { color: var(--color-ok); } .g-down { color: var(--color-bad); } .g-flat { color: var(--color-fg-muted); }
+.g-prog { height: 6px; border-radius: 3px; background: var(--cds-chart-grid); overflow: hidden; }
+.g-prog i { display: block; height: 100%; border-radius: 3px; background: var(--color-ok); width: 0; }
+.g-prog.warn i { background: var(--color-warn); } .g-prog.bad i { background: var(--color-bad); }
+.g-split { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; }
+.g-split i { display: block; height: 100%; }
+.g-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: var(--cds-gap-md); margin-top: var(--cds-gap-md); }
+.g-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+.g-card h3 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+.g-card .g-cn { margin: 2px 0 var(--cds-gap-md); color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.g-chart { position: relative; min-height: 260px; }
+.g-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); margin-bottom: 8px; }
+.g-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.g-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.g-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; z-index: 3; }
+.g-tip .h { color: var(--cds-text-secondary); margin-bottom: 2px; }
+.g-tip .r { display: flex; align-items: center; gap: 6px; }
+.g-tip .r i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.g-tip .r b { margin-left: auto; padding-left: 12px; font-weight: 600; }
+.g-fun { display: flex; flex-direction: column; gap: 10px; min-height: 260px; }
+.g-fr { display: grid; grid-template-columns: minmax(7.5rem, 11rem) 1fr; gap: 10px; align-items: center; }
+.g-fl { font-size: var(--cds-font-size-caption); line-height: 1.25; }
+.g-fl .c { display: block; color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+.g-ft { position: relative; height: 26px; }
+.g-ft .cur { position: absolute; left: 0; top: 0; height: 18px; border-radius: 4px; background: var(--fill); min-width: 2px; }
+.g-ft .prev { position: absolute; left: 0; top: 21px; height: 4px; border-radius: 2px; background: var(--cds-chart-muted); min-width: 2px; }
+.g-ft .n { position: absolute; top: 0; height: 18px; line-height: 18px; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; padding-left: 6px; white-space: nowrap; }
+.g-tbl-wrap { overflow: auto; max-height: 26rem; }
+.g-tbl { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.g-tbl th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+.g-tbl td { padding: 7px 8px; border-bottom: 1px solid var(--cds-chart-grid); vertical-align: top; }
+.g-tbl td.num, .g-tbl th.num { text-align: right; white-space: nowrap; }
+.g-tbl td.why { color: var(--color-fg-muted); min-width: 14rem; }
+.g-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 600; border: 1px solid currentColor; white-space: nowrap; }
+.g-chip.Scale { color: var(--color-ok); } .g-chip.Refresh, .g-chip.Fix { color: var(--color-warn); } .g-chip.Kill { color: var(--color-bad); } .g-chip.Hold, .g-chip.Watch { color: var(--color-fg-muted); }
+.g-flag { color: var(--color-bad); font-weight: 600; }
+.g-best { color: var(--color-ok); font-weight: 600; }
+.g-rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: var(--cds-gap-sm); margin-top: var(--cds-gap-md); }
+.g-rule { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); border-left: 3px solid var(--cds-chart-grid); padding: 2px 0 2px 10px; }
+.g-rule b { display: block; color: var(--color-fg); }
+.g-foot { margin: var(--cds-gap-xl) 0 var(--cds-gap-lg); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+[data-dash-source-state=empty] { color: transparent; }
+.g-fail { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 120px; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+.g-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+</style>
+
+<div class="g-wrap">
+  <header class="g-head" id="top">
+    <div>
+      <h1 class="g-title">Alcovia GTM tracker</h1>
+      <p class="g-take" id="takeaway">
+        <span data-source="kpis" data-field="label" data-per class="dash-skeleton">—</span>:
+        <b data-source="kpis" data-field="revenue" data-per data-fmt="inr">—</b> collected, which is
+        <b data-source="kpis" data-field="attainment" data-per data-fmt="pct0">—</b> of the pro-rated target.
+        Cost per qualified lead is <b data-source="kpis" data-field="cpql" data-per data-fmt="inr">—</b>, and
+        <b data-source="adsets_summary" data-field="act_count" data-per>—</b> ad sets need a scale, refresh, fix or kill call.
+      </p>
+    </div>
+    <div class="g-ctrl">
+      <label for="g-period">Period</label>
+      <select id="g-period" data-source="periods"></select>
+      <span class="g-range" id="g-range"></span>
+    </div>
+  </header>
+
+  <nav class="g-nav" aria-label="Sections">
+    <a href="#revenue">Revenue</a><a href="#funnel">Funnel</a><a href="#campaigns">Campaigns</a><a href="#rca">Scale / refresh / kill</a><a href="#collections">Collections and renewals</a>
+  </nav>
+
+  <section class="g-sec" id="revenue">
+    <h2>Revenue</h2>
+    <p class="g-note">Money collected in Razorpay in the selected period. Change is against the period of the same length just before it.</p>
+    <div class="g-tiles">
+      <div class="g-tile" id="t-revenue">
+        <div class="g-tl">Collected vs target</div>
+        <div class="g-big" data-source="kpis" data-field="revenue" data-per data-fmt="inr">—</div>
+        <div class="g-prog" id="rev-prog" data-source="kpis"><i></i></div>
+        <div class="g-sub"><b data-source="kpis" data-field="attainment" data-per data-fmt="pct0">—</b> of <span data-source="kpis" data-field="target" data-per data-fmt="inr">—</span> target</div>
+        <div class="g-sub" data-source="kpis" data-field="revenue_change" data-per data-fmt="chg">—</div>
+      </div>
+      <div class="g-tile" id="t-program">
+        <div class="g-tl">Program revenue</div>
+        <div class="g-big" data-source="kpis" data-field="program_revenue" data-per data-fmt="inr">—</div>
+        <div class="g-split" id="prog-split" data-source="kpis"></div>
+        <div class="g-sub">Trials <b data-source="kpis" data-field="trial_revenue" data-per data-fmt="inr">—</b> · Full <b data-source="kpis" data-field="full_revenue" data-per data-fmt="inr">—</b> · Upgrades <b data-source="kpis" data-field="upgrade_revenue" data-per data-fmt="inr">—</b></div>
+      </div>
+      <div class="g-tile" id="t-workshop">
+        <div class="g-tl">Workshop revenue (₹3,999 a seat)</div>
+        <div class="g-big" data-source="kpis" data-field="workshop_revenue" data-per data-fmt="inr">—</div>
+        <div class="g-sub"><b data-source="kpis" data-field="workshop_seats" data-per data-fmt="int">—</b> seats sold</div>
+        <div class="g-sub">Program share of revenue <b data-source="kpis" data-field="program_share" data-per data-fmt="pct0">—</b></div>
+      </div>
+      <div class="g-tile" id="t-onboarded">
+        <div class="g-tl">Students onboarded</div>
+        <div class="g-big" data-source="kpis" data-field="onboarded" data-per data-fmt="int">—</div>
+        <div class="g-sub"><b data-source="kpis" data-field="trials_new" data-per data-fmt="int">—</b> 3-month trials · <b data-source="kpis" data-field="full_new" data-per data-fmt="int">—</b> full program</div>
+        <div class="g-sub" data-source="kpis" data-field="onboarded_change" data-per data-fmt="chg">—</div>
+      </div>
+      <div class="g-tile" id="t-unpaid">
+        <div class="g-tl">Invoiced, not paid (today)</div>
+        <div class="g-big" data-source="kpis" data-field="unpaid_amount" data-per data-fmt="inr">—</div>
+        <div class="g-sub"><b data-source="kpis" data-field="unpaid_count" data-per data-fmt="int">—</b> invoices open</div>
+      </div>
+      <div class="g-tile" id="t-renewals">
+        <div class="g-tl">Trial renewals in next 30 days</div>
+        <div class="g-big" data-source="kpis" data-field="renewals_due" data-per data-fmt="int">—</div>
+        <div class="g-sub"><b data-source="kpis" data-field="renewals_unbooked" data-per data-fmt="int">—</b> not booked or at risk</div>
+      </div>
+    </div>
+    <div class="g-card" style="margin-top: var(--cds-gap-md);" id="rev-card">
+      <h3>Revenue by stream</h3>
+      <p class="g-cn" id="rev-note">Collected each day or week of the period.</p>
+      <div class="g-legend" id="rev-legend"></div>
+      <div class="g-chart" id="rev-chart" data-source="payments"></div>
+    </div>
+  </section>
+
+  <section class="g-sec" id="funnel">
+    <h2>Meta ads funnel</h2>
+    <p class="g-note">Leads created in the period and how far they have got. Program conversion = sign-ups closed in the period ÷ qualified leads created in it.</p>
+    <div class="g-tiles">
+      <div class="g-tile"><div class="g-tl">Total leads</div><div class="g-big" data-source="kpis" data-field="leads" data-per data-fmt="int">—</div><div class="g-sub" data-source="kpis" data-field="leads_change" data-per data-fmt="chg">—</div></div>
+      <div class="g-tile"><div class="g-tl">Cost per qualified lead (Meta)</div><div class="g-big" data-source="kpis" data-field="cpql" data-per data-fmt="inr">—</div><div class="g-sub" data-source="kpis" data-field="cpql_change" data-per data-fmt="chginv">—</div><div class="g-sub">Target ₹1,900</div></div>
+      <div class="g-tile"><div class="g-tl">Program conversion</div><div class="g-big" data-source="kpis" data-field="conversion" data-per data-fmt="pct1">—</div><div class="g-sub" data-source="kpis" data-field="conversion_change" data-per data-fmt="pp">—</div></div>
+      <div class="g-tile"><div class="g-tl">Discovery call show-up</div><div class="g-big" data-source="kpis" data-field="showup" data-per data-fmt="pct0">—</div><div class="g-sub" data-source="kpis" data-field="showup_change" data-per data-fmt="pp">—</div></div>
+      <div class="g-tile"><div class="g-tl">Organic and referral leads</div><div class="g-big" data-source="kpis" data-field="organic" data-per data-fmt="int">—</div><div class="g-sub" data-source="kpis" data-field="organic_change" data-per data-fmt="chg">—</div></div>
+      <div class="g-tile"><div class="g-tl">Average lead journey</div><div class="g-big" data-source="kpis" data-field="journey_days" data-per data-fmt="days">—</div><div class="g-sub">lead to signed up or lost</div></div>
+    </div>
+    <div class="g-card" style="margin-top: var(--cds-gap-md);" id="funnel-card">
+      <h3>Where leads drop off</h3>
+      <p class="g-cn">Each bar is the count reaching that stage; the thin bar under it is the previous period. The step whose conversion fell most is in red.</p>
+      <div class="g-fun" id="funnel-chart" data-source="funnel"></div>
+    </div>
+  </section>
+
+  <section class="g-sec" id="campaigns">
+    <h2>Campaign performance</h2>
+    <p class="g-note">Every ad asset for the period. Result = qualified lead for program ads, workshop registration for workshop ads. Best and worst CTR in each campaign type are marked.</p>
+    <div class="g-card" id="assets-card">
+      <h3>Ad assets</h3>
+      <p class="g-cn">Frequency is the 7-day average at the end of the period; 3 or more means the audience is tired.</p>
+      <div class="g-tbl-wrap">
+        <table class="g-tbl" id="assets-table" data-source="assets" data-row-key="period,asset">
+          <thead><tr>
+            <th data-field="asset">Asset</th><th data-field="campaign_type">Type</th><th data-field="campaign">Campaign</th>
+            <th class="num" data-field="spend">Spend</th><th class="num" data-field="ctr">CTR</th><th class="num" data-field="ctr_change">CTR vs prev</th>
+            <th class="num" data-field="frequency">Frequency</th><th class="num" data-field="results">Results</th><th class="num" data-field="cost_per_result">Cost per result</th>
+          </tr></thead><tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="g-card" style="margin-top: var(--cds-gap-md);" id="lp-card">
+      <h3>Landing page health</h3>
+      <p class="g-cn">Form submits ÷ visits, and average load time. Over 3 seconds loses parents on mobile data.</p>
+      <div class="g-tbl-wrap">
+        <table class="g-tbl" id="lp-table" data-source="landing" data-row-key="period,landing_page">
+          <thead><tr><th data-field="landing_page">Landing page</th><th class="num" data-field="visits">Visits</th><th class="num" data-field="submits">Submits</th><th class="num" data-field="conversion">Conversion</th><th class="num" data-field="dropoff">Drop-off</th><th class="num" data-field="load_s">Load time</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="g-sec" id="rca">
+    <h2>Scale, refresh or kill</h2>
+    <p class="g-note">Each ad set gets one action from fixed rules, checked in this order. Targets: ₹1,900 per qualified lead (program), ₹300 per registration (workshop).</p>
+    <div class="g-card" id="rca-card">
+      <h3>Ad set actions</h3>
+      <p class="g-cn">The reason column names the number that triggered the action.</p>
+      <div class="g-tbl-wrap">
+        <table class="g-tbl" id="rca-table" data-source="adsets" data-row-key="period,ad_set_key">
+          <thead><tr><th data-field="action">Action</th><th data-field="ad_set_key">Ad set</th><th class="num" data-field="spend">Spend</th><th class="num" data-field="cost_per_result">Cost per result</th><th class="num" data-field="frequency">Frequency</th><th class="num" data-field="ctr_change">CTR vs prev</th><th class="num" data-field="lp_conversion">LP conv.</th><th class="num" data-field="lp_load_s">Load</th><th data-field="reason">Why</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="g-rules">
+        <div class="g-rule"><b>1 · Watch</b>Under ₹5,000 spent: too early to judge.</div>
+        <div class="g-rule"><b>2 · Fix landing page</b>CTR at least 1% but load over 3 s or LP conversion under 1.5% (program) / 4% (workshop).</div>
+        <div class="g-rule"><b>3 · Kill</b>Cost per result over 2× target.</div>
+        <div class="g-rule"><b>4 · Refresh creative</b>Frequency 3 or more, or CTR down 30%+ on the previous period.</div>
+        <div class="g-rule"><b>5 · Scale</b>Cost at or under target and frequency under 2.5: add 20% budget a week.</div>
+        <div class="g-rule"><b>6 · Hold</b>None of the above: keep running, test a new audience.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="g-sec" id="collections">
+    <h2>Collections and renewals</h2>
+    <p class="g-note">As of today, whatever period is selected.</p>
+    <div class="g-grid2">
+      <div class="g-card" id="unpaid-card">
+        <h3>Invoices not paid</h3>
+        <p class="g-cn">Oldest first. Reminders go out automatically on day 7 and day 15.</p>
+        <div class="g-tbl-wrap">
+          <table class="g-tbl" id="unpaid-table" data-source="invoices" data-row-key="invoice_id">
+            <thead><tr><th data-field="invoice_id">Invoice</th><th data-field="family">Family</th><th data-field="item">Item</th><th class="num" data-field="amount">Amount</th><th class="num" data-field="days_open">Days open</th><th data-field="owner">Owner</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="g-card" id="renew-card">
+        <h3>3-month trials ending in 30 days</h3>
+        <p class="g-cn">Soonest first. Anything not booked or at risk is flagged to the advisor.</p>
+        <div class="g-tbl-wrap">
+          <table class="g-tbl" id="renew-table" data-source="renewals" data-row-key="family">
+            <thead><tr><th data-field="family">Family</th><th data-field="trial_end">Trial ends</th><th class="num" data-field="days_left">Days left</th><th data-field="advisor">Advisor</th><th data-field="renewal_call">Renewal call</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="g-foot">All figures are sample data built for this assignment, anchored on 25 Oct 2026. In production each source is replaced by a live feed: Razorpay (payments, invoices), ClickUp (leads and stages), Meta Ads API (spend, CTR, frequency) and PageSpeed / GA4 (landing pages), synced hourly by n8n.</p>
+</div>
+
+<script>
+// ---------- calculations ----------
+dash.calc('periods', {
+  title: 'Period options',
+  description: 'The period choices and their date ranges, anchored on the sample data’s last day (25 Oct 2026); each has a previous period of the same length.',
+  inputs: ['targets'],
+  fn: (targets) => [
+    {period: 'mtd', label: 'October to date', start: '2026-10-01', end: '2026-10-25', prev_start: '2026-09-01', prev_end: '2026-09-25'},
+    {period: 'last_month', label: 'September', start: '2026-09-01', end: '2026-09-30', prev_start: '2026-08-01', prev_end: '2026-08-31'},
+    {period: 'd7', label: 'Last 7 days', start: '2026-10-19', end: '2026-10-25', prev_start: '2026-10-12', prev_end: '2026-10-18'},
+    {period: 'd30', label: 'Last 30 days', start: '2026-09-26', end: '2026-10-25', prev_start: '2026-08-27', prev_end: '2026-09-25'},
+    {period: 'd90', label: 'Last 90 days', start: '2026-07-28', end: '2026-10-25', prev_start: '2026-04-29', prev_end: '2026-07-27'},
+    {period: 'last_q', label: 'Jul–Sep quarter', start: '2026-07-01', end: '2026-09-30', prev_start: '2026-04-01', prev_end: '2026-06-30'},
+    {period: 'fytd', label: 'Since April', start: '2026-04-01', end: '2026-10-25', prev_start: null, prev_end: null},
+  ],
+});
+
+dash.calc('kpis', {
+  title: 'Headline numbers by period',
+  description: 'Revenue, sign-ups, funnel rates and spend for each period, with the change on the previous period of the same length. Target is the monthly target pro-rated by days.',
+  inputs: ['periods', 'payments', 'targets', 'invoices', 'leads', 'ads', 'renewals'],
+  fn: (periods, payments, targets, invoices, leads, ads, renewals) => {
+    const inR = (d, s, e) => d >= s && d <= e;
+    const sum = (a, f) => a.reduce((t, r) => t + (Number(f(r)) || 0), 0);
+    const tgt = (s, e) => {
+      let t = 0;
+      targets.forEach((m) => {
+        const dim = new Date(Date.UTC(Number(m.month.slice(0, 4)), Number(m.month.slice(5, 7)), 0)).getUTCDate();
+        const ms = m.month + '-01', me = m.month + '-' + String(dim).padStart(2, '0');
+        const os = s > ms ? s : ms, oe = e < me ? e : me;
+        if (os <= oe) t += Number(m.revenue_target) * ((Date.parse(oe) - Date.parse(os)) / 864e5 + 1) / dim;
+      });
+      return Math.round(t);
+    };
+    const block = (s, e) => {
+      if (!s) return null;
+      const P = payments.filter((r) => inR(r.date, s, e));
+      const L = leads.filter((r) => inR(r.created, s, e));
+      const C = leads.filter((r) => r.closed && inR(r.closed, s, e));
+      const spend = sum(ads.filter((r) => inR(r.date, s, e) && r.campaign_type === 'Program'), (r) => r.spend);
+      const paidQ = L.filter((r) => r.qualified && r.channel === 'Meta').length;
+      const q = L.filter((r) => r.qualified).length;
+      const won = C.filter((r) => r.outcome === 'Signed up').length;
+      const set = L.filter((r) => r.stage_index >= 2).length, att = L.filter((r) => r.stage_index >= 3).length;
+      const trials = P.filter((r) => r.plan === '3-month trial'), fulls = P.filter((r) => r.plan === 'Full program' && r.type === 'New sign-up');
+      return {
+        revenue: sum(P, (r) => r.amount), trial: sum(trials, (r) => r.amount), full: sum(fulls, (r) => r.amount),
+        upgrade: sum(P.filter((r) => r.type === 'Trial upgrade'), (r) => r.amount),
+        workshop: sum(P.filter((r) => r.stream === 'Workshop'), (r) => r.amount), seats: P.filter((r) => r.stream === 'Workshop').length,
+        trials_new: trials.length, full_new: fulls.length, leads: L.length, spend,
+        cpql: paidQ ? Math.round(spend / paidQ) : null, conversion: q ? won / q : null, showup: set ? att / set : null,
+        organic: L.filter((r) => r.channel !== 'Meta').length,
+        journey: C.length ? Math.round(10 * sum(C, (r) => (Date.parse(r.closed) - Date.parse(r.created)) / 864e5) / C.length) / 10 : null,
+        target: tgt(s, e),
+      };
+    };
+    const chg = (a, b) => (a == null || !b ? null : a / b - 1);
+    const pp = (a, b) => (a == null || b == null ? null : a - b);
+    const unpaid = invoices.filter((r) => r.status === 'Unpaid');
+    const ren = renewals.filter((r) => r.days_left <= 30);
+    return periods.map((p) => {
+      const c = block(p.start, p.end), v = block(p.prev_start, p.prev_end) || {};
+      const program = c.trial + c.full + c.upgrade;
+      return {
+        period: p.period, label: p.label,
+        revenue: c.revenue, revenue_change: chg(c.revenue, v.revenue), target: c.target, attainment: c.target ? c.revenue / c.target : null,
+        program_revenue: program, trial_revenue: c.trial, full_revenue: c.full, upgrade_revenue: c.upgrade,
+        workshop_revenue: c.workshop, workshop_seats: c.seats, program_share: c.revenue ? program / c.revenue : null,
+        onboarded: c.trials_new + c.full_new, onboarded_change: chg(c.trials_new + c.full_new, v.trials_new == null ? null : v.trials_new + v.full_new),
+        trials_new: c.trials_new, full_new: c.full_new,
+        leads: c.leads, leads_change: chg(c.leads, v.leads), spend: c.spend,
+        cpql: c.cpql, cpql_change: chg(c.cpql, v.cpql),
+        conversion: c.conversion, conversion_change: pp(c.conversion, v.conversion),
+        showup: c.showup, showup_change: pp(c.showup, v.showup),
+        organic: c.organic, organic_change: chg(c.organic, v.organic), journey_days: c.journey,
+        unpaid_amount: sum(unpaid, (r) => r.amount), unpaid_count: unpaid.length,
+        renewals_due: ren.length, renewals_unbooked: ren.filter((r) => r.renewal_call === 'Not booked' || r.renewal_call === 'Done – at risk').length,
+      };
+    });
+  },
+});
+
+dash.calc('funnel', {
+  title: 'Funnel by period',
+  description: 'Leads created in each period that reached each stage, with the previous period alongside.',
+  inputs: ['periods', 'leads'],
+  fn: (periods, leads) => {
+    const stages = ['Lead', 'Qualified', 'Discovery call set', 'Discovery call attended', 'Ambition interview', 'Architect session', 'Signed up'];
+    const out = [];
+    periods.forEach((p) => {
+      const cur = leads.filter((r) => r.created >= p.start && r.created <= p.end);
+      const prev = p.prev_start ? leads.filter((r) => r.created >= p.prev_start && r.created <= p.prev_end) : null;
+      stages.forEach((s, i) => out.push({
+        period: p.period, stage: s, stage_index: i,
+        count: cur.filter((r) => r.stage_index >= i).length,
+        prev_count: prev ? prev.filter((r) => r.stage_index >= i).length : null,
+      }));
+    });
+    return out;
+  },
+});
+
+dash.calc('assets', {
+  title: 'Ad assets by period',
+  description: 'Spend, CTR, end-of-period frequency, results and cost per result for every ad asset; results are qualified leads (program) or registrations (workshop).',
+  inputs: ['periods', 'ads', 'leads'],
+  fn: (periods, ads, leads) => {
+    const out = [];
+    periods.forEach((p) => {
+      const lastWeek = new Date(Date.parse(p.end) - 6 * 864e5).toISOString().slice(0, 10);
+      const groups = {};
+      ads.forEach((r) => {
+        const cur = r.date >= p.start && r.date <= p.end, prv = p.prev_start && r.date >= p.prev_start && r.date <= p.prev_end;
+        if (!cur && !prv) return;
+        const g = groups[r.asset] || (groups[r.asset] = {asset: r.asset, campaign_type: r.campaign_type, campaign: r.campaign, ad_set: r.ad_set, landing_page: r.landing_page, spend: 0, imp: 0, clk: 0, pimp: 0, pclk: 0, f: 0, fn: 0, vis: 0, sub: 0, load: 0, ln: 0});
+        if (cur) {
+          g.spend += r.spend; g.imp += r.impressions; g.clk += r.clicks; g.vis += r.lp_visits; g.sub += r.lp_submits; g.load += r.lp_load_s; g.ln += 1;
+          if (r.date >= lastWeek) { g.f += r.frequency_7d; g.fn += 1; }
+        } else { g.pimp += r.impressions; g.pclk += r.clicks; }
+      });
+      const q = {};
+      leads.forEach((r) => { if (r.qualified && r.channel === 'Meta' && r.created >= p.start && r.created <= p.end) q[r.asset] = (q[r.asset] || 0) + 1; });
+      Object.values(groups).forEach((g) => {
+        if (!g.ln) return;
+        const ctr = g.imp ? g.clk / g.imp : null, pctr = g.pimp ? g.pclk / g.pimp : null;
+        const results = g.campaign_type === 'Program' ? (q[g.asset] || 0) : g.sub;
+        out.push({
+          period: p.period, asset: g.asset, campaign_type: g.campaign_type, campaign: g.campaign, ad_set: g.ad_set, landing_page: g.landing_page,
+          spend: g.spend, ctr, ctr_change: ctr != null && pctr ? ctr / pctr - 1 : null,
+          frequency: g.fn ? Math.round(100 * g.f / g.fn) / 100 : null,
+          results, cost_per_result: results ? Math.round(g.spend / results) : null,
+          lp_visits: g.vis, lp_submits: g.sub, lp_load_s: Math.round(10 * g.load / g.ln) / 10,
+        });
+      });
+    });
+    return out;
+  },
+});
+
+dash.calc('adsets', {
+  title: 'Ad set actions by period',
+  description: 'Each ad set’s numbers and the scale / refresh / fix / kill action from the fixed rules (targets ₹1,900 per qualified lead, ₹300 per workshop registration).',
+  inputs: ['assets'],
+  fn: (assets) => {
+    const groups = {};
+    assets.forEach((a) => {
+      const key = a.period + '|' + a.campaign + ' / ' + a.ad_set;
+      const g = groups[key] || (groups[key] = {period: a.period, ad_set_key: a.campaign + ' / ' + a.ad_set, campaign_type: a.campaign_type, spend: 0, results: 0, vis: 0, sub: 0, ctrw: 0, chgw: 0, fw: 0, lw: 0, impw: 0});
+      g.spend += a.spend; g.results += a.results; g.vis += a.lp_visits; g.sub += a.lp_submits;
+      g.ctrw += (a.ctr || 0) * a.spend; g.chgw += (a.ctr_change || 0) * a.spend; g.fw += (a.frequency || 0) * a.spend; g.lw += a.lp_load_s * a.spend;
+    });
+    return Object.values(groups).map((g) => {
+      const target = g.campaign_type === 'Program' ? 1900 : 300;
+      const cpr = g.results ? Math.round(g.spend / g.results) : null;
+      const ctr = g.spend ? g.ctrw / g.spend : null, chg = g.spend ? g.chgw / g.spend : null;
+      const freq = g.spend ? Math.round(100 * g.fw / g.spend) / 100 : null, load = g.spend ? Math.round(10 * g.lw / g.spend) / 10 : null;
+      const lpc = g.vis ? g.sub / g.vis : null, lpMin = g.campaign_type === 'Program' ? 0.015 : 0.04;
+      let action = 'Hold', reason = 'Within limits; test a new audience before adding budget.';
+      if (g.spend < 5000) { action = 'Watch'; reason = 'Under ₹5,000 spent.'; }
+      else if (ctr >= 0.01 && (load > 3 || lpc < lpMin)) { action = 'Fix LP'; reason = 'Ad gets clicks (CTR ' + (ctr * 100).toFixed(1) + '%) but the page loses them: ' + (load > 3 ? 'load ' + load + ' s' : 'conversion ' + (lpc * 100).toFixed(1) + '%') + '.'; }
+      else if (cpr == null || cpr > 2 * target) { action = 'Kill'; reason = cpr == null ? 'No results.' : 'Cost per result ₹' + cpr.toLocaleString('en-IN') + ' is over 2× the ₹' + target.toLocaleString('en-IN') + ' target.'; }
+      else if (freq >= 3 || (chg != null && chg <= -0.3)) { action = 'Refresh'; reason = freq >= 3 ? 'Frequency ' + freq + ': audience has seen it too often.' : 'CTR down ' + Math.round(-chg * 100) + '% on the previous period.'; }
+      else if (cpr <= target && freq < 2.5) { action = 'Scale'; reason = 'Cost ₹' + cpr.toLocaleString('en-IN') + ' is under target with room on frequency.'; }
+      return {period: g.period, ad_set_key: g.ad_set_key, campaign_type: g.campaign_type, action, spend: g.spend, cost_per_result: cpr, frequency: freq, ctr_change: chg, lp_conversion: lpc, lp_load_s: load, reason};
+    });
+  },
+});
+
+dash.calc('adsets_summary', {
+  title: 'Ad sets needing action',
+  description: 'How many ad sets in each period have a Scale, Refresh, Fix LP or Kill action.',
+  inputs: ['adsets'],
+  fn: (adsets) => {
+    const out = {};
+    adsets.forEach((a) => {
+      out[a.period] = out[a.period] || {period: a.period, act_count: 0};
+      if (['Scale', 'Refresh', 'Fix LP', 'Kill'].includes(a.action)) out[a.period].act_count += 1;
+    });
+    return Object.values(out);
+  },
+});
+
+dash.calc('landing', {
+  title: 'Landing pages by period',
+  description: 'Visits, form submits, conversion, drop-off and average load time for each landing page.',
+  inputs: ['periods', 'ads'],
+  fn: (periods, ads) => {
+    const out = [];
+    periods.forEach((p) => {
+      const g = {};
+      ads.forEach((r) => {
+        if (r.date < p.start || r.date > p.end) return;
+        const x = g[r.landing_page] || (g[r.landing_page] = {v: 0, s: 0, l: 0, n: 0});
+        x.v += r.lp_visits; x.s += r.lp_submits; x.l += r.lp_load_s; x.n += 1;
+      });
+      Object.keys(g).sort().forEach((k) => {
+        const x = g[k];
+        out.push({period: p.period, landing_page: k, visits: x.v, submits: x.s, conversion: x.v ? x.s / x.v : null, dropoff: x.v ? 1 - x.s / x.v : null, load_s: Math.round(10 * x.l / x.n) / 10});
+      });
+    });
+    return out;
+  },
+});
+</script>
+
+<script>
+(() => {
+  const inr = (v) => {
+    if (v == null || isNaN(v)) return '—';
+    const a = Math.abs(v);
+    if (a >= 1e7) return '₹' + (v / 1e7).toFixed(2) + ' Cr';
+    if (a >= 1e5) return '₹' + (v / 1e5).toFixed(1) + ' L';
+    return '₹' + Math.round(v).toLocaleString('en-IN');
+  };
+  const pct = (v, d) => (v == null || isNaN(v) ? '—' : (v * 100).toFixed(d) + '%');
+  const fmt = {
+    inr, int: (v) => (v == null ? '—' : d3.format(',')(v)), pct0: (v) => pct(v, 0), pct1: (v) => pct(v, 1),
+    days: (v) => (v == null ? '—' : v.toFixed(1) + ' days'),
+  };
+  window.gFmt = {inr, pct};
+  const setDefaults = () => { if (!dash.params().period) dash.setParams({period: 'mtd'}); };
+  setDefaults();
+
+  const sel = document.getElementById('g-period');
+  sel.addEventListener('change', () => dash.setParams({period: sel.value}));
+
+  const deltaText = (el, v, mode) => {
+    el.classList.remove('g-up', 'g-down', 'g-flat');
+    if (v == null || isNaN(v)) { el.textContent = 'No earlier period to compare'; el.classList.add('g-flat'); return; }
+    const good = mode === 'chginv' ? v < 0 : v > 0;
+    const s = mode === 'pp' ? (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + ' pts' : (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(0) + '%';
+    el.textContent = s + ' vs previous period';
+    el.classList.add(Math.abs(v) < 0.005 ? 'g-flat' : good ? 'g-up' : 'g-down');
+  };
+
+  dash.onData(() => {
+    const per = dash.params().period || 'mtd';
+    const P = dash.data('periods');
+    if (P.status === 'ok') {
+      const cur = sel.value;
+      sel.replaceChildren(...P.data.map((p) => new Option(p.label, p.period)));
+      sel.value = per;
+      const p = P.data.find((x) => x.period === per);
+      const d = (s) => d3.utcFormat('%-d %b %Y')(new Date(s));
+      document.getElementById('g-range').textContent = p ? d(p.start) + ' – ' + d(p.end) : '';
+    }
+    const K = dash.data('kpis');
+    const row = K.status === 'ok' ? K.data.find((r) => r.period === per) : null;
+    const S = dash.data('adsets_summary');
+    const srow = S.status === 'ok' ? S.data.find((r) => r.period === per) : null;
+    document.querySelectorAll('[data-per]').forEach((el) => {
+      el.setAttribute('data-where', 'period=' + per);
+      const src = el.getAttribute('data-source'), f = el.getAttribute('data-field'), m = el.getAttribute('data-fmt');
+      const r = src === 'kpis' ? row : src === 'adsets_summary' ? srow : null;
+      if (!r) { el.textContent = '—'; return; }
+      el.classList.remove('dash-skeleton');
+      const v = r[f];
+      if (m === 'chg' || m === 'chginv' || m === 'pp') deltaText(el, v, m);
+      else el.textContent = fmt[m] ? fmt[m](v) : v == null ? '—' : String(v);
+    });
+    // progress and split bars
+    const prog = document.getElementById('rev-prog');
+    if (row) {
+      const a = row.attainment || 0;
+      prog.querySelector('i').style.width = Math.min(100, a * 100) + '%';
+      prog.classList.toggle('warn', a < 0.9 && a >= 0.75); prog.classList.toggle('bad', a < 0.75);
+      const sp = document.getElementById('prog-split');
+      const tot = row.program_revenue || 1;
+      sp.replaceChildren(...[[row.trial_revenue, 0], [row.full_revenue, 1], [row.upgrade_revenue, 2]].map(([v, i]) => {
+        const e = document.createElement('i'); e.style.width = (100 * v / tot) + '%'; e.style.background = dash.colors[i]; return e;
+      }));
+    }
+  });
+})();
+</script>
+
+<script>
+// Revenue by stream chart
+(() => {
+  const box = document.getElementById('rev-chart');
+  const legend = document.getElementById('rev-legend');
+  const cats = ['3-month trial', 'Full program (new)', 'Trial upgrade', 'Workshop'];
+  const catOf = (r) => r.stream === 'Workshop' ? 'Workshop' : r.type === 'Trial upgrade' ? 'Trial upgrade' : r.plan === '3-month trial' ? '3-month trial' : 'Full program (new)';
+  let drawnOnce = false;
+  dash.onData(() => {
+    const st = dash.data('payments'), P = dash.data('periods');
+    legend.replaceChildren(...cats.map((c, i) => { const s = document.createElement('span'); const sw = document.createElement('i'); sw.style.background = dash.colors[i]; s.append(sw, document.createTextNode(c)); return s; }));
+    if (st.status === 'error') { box.replaceChildren(); const f = document.createElement('div'); f.className = 'g-fail'; f.textContent = 'Failed to load'; box.append(f); return; }
+    if (st.status !== 'ok' || P.status !== 'ok') { box.replaceChildren(); return; }
+    const per = dash.params().period || 'mtd';
+    const p = P.data.find((x) => x.period === per); if (!p) return;
+    const days = (Date.parse(p.end) - Date.parse(p.start)) / 864e5 + 1;
+    const weekly = days > 31;
+    document.getElementById('rev-note').textContent = 'Collected each ' + (weekly ? 'week (weeks start Monday)' : 'day') + ' of the period, by stream.';
+    const s0 = new Date(p.start + 'T00:00:00Z'), e0 = new Date(p.end + 'T00:00:00Z');
+    const buckets = weekly ? d3.utcMonday.range(d3.utcMonday.floor(s0), d3.utcDay.offset(e0, 1)) : d3.utcDay.range(s0, d3.utcDay.offset(e0, 1));
+    const keyOf = (ds) => { const d = new Date(ds + 'T00:00:00Z'); return (weekly ? d3.utcMonday.floor(d) : d).toISOString().slice(0, 10); };
+    const agg = new Map(buckets.map((b) => [b.toISOString().slice(0, 10), Object.fromEntries(cats.map((c) => [c, 0]))]));
+    st.data.forEach((r) => { if (r.date < p.start || r.date > p.end) return; const k = keyOf(r.date); const a = agg.get(k); if (a) a[catOf(r)] += r.amount; });
+    const data = [...agg.entries()].map(([k, v]) => ({key: k, ...v}));
+    const series = d3.stack().keys(cats)(data);
+    const W = Math.max(280, box.clientWidth), H = 260, m = {t: 8, r: 8, b: 26, l: 8};
+    const maxY = d3.max(series, (s) => d3.max(s, (d) => d[1])) || 1;
+    const y = d3.scaleLinear([0, maxY], [H - m.b, m.t]).nice();
+    const fmtY = (v) => window.gFmt.inr(v);
+    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', 'Revenue by stream over the period');
+    const yTicks = y.ticks(4);
+    const tmp = svg.append('g').attr('font-size', 11);
+    box.replaceChildren(svg.node());
+    let wl = 0; yTicks.forEach((t) => { const tx = tmp.append('text').text(fmtY(t)); wl = Math.max(wl, tx.node().getComputedTextLength()); }); tmp.remove();
+    m.l = wl + 12;
+    const x = d3.scaleBand(data.map((d) => d.key), [m.l, W - m.r]).padding(0.25);
+    const gy = svg.append('g');
+    yTicks.forEach((t) => {
+      gy.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(t)).attr('y2', y(t)).attr('stroke', 'var(--cds-chart-grid)');
+      gy.append('text').attr('x', m.l - 6).attr('y', y(t) + 4).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(fmtY(t));
+    });
+    series.forEach((s, i) => {
+      svg.append('g').attr('fill', dash.colors[i]).selectAll('rect').data(s).join('rect')
+        .attr('x', (d) => x(d.data.key)).attr('width', x.bandwidth())
+        .attr('y', (d) => y(d[1])).attr('height', (d) => Math.max(0, y(d[0]) - y(d[1])));
+    });
+    const fmtX = weekly ? d3.utcFormat('%-d %b') : d3.utcFormat('%-d');
+    const every = Math.ceil(data.length / Math.max(2, Math.floor((W - m.l) / 52)));
+    data.forEach((d, i) => { if (i % every) return; svg.append('text').attr('x', x(d.key) + x.bandwidth() / 2).attr('y', H - 8).attr('text-anchor', 'middle').attr('font-size', 11).attr('fill', 'var(--color-fg-muted)').text(fmtX(new Date(d.key + 'T00:00:00Z'))); });
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', 'var(--cds-chart-axis)');
+    // tooltip
+    const tip = document.createElement('div'); tip.className = 'g-tip'; box.append(tip);
+    svg.append('g').selectAll('rect').data(data).join('rect').attr('x', (d) => x(d.key) - x.step() * x.paddingInner() / 2).attr('width', x.step()).attr('y', m.t).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+      .on('mousemove', (ev, d) => {
+        const head = document.createElement('div'); head.className = 'h';
+        head.textContent = (weekly ? 'Week of ' : '') + d3.utcFormat('%-d %b %Y')(new Date(d.key + 'T00:00:00Z'));
+        const rows = cats.map((c, i) => { const r = document.createElement('div'); r.className = 'r'; const sw = document.createElement('i'); sw.style.background = dash.colors[i]; const b = document.createElement('b'); b.textContent = window.gFmt.inr(d[c]); r.append(sw, document.createTextNode(c), b); return r; });
+        const tot = document.createElement('div'); tot.className = 'r'; const tb = document.createElement('b'); tb.textContent = window.gFmt.inr(cats.reduce((t, c) => t + d[c], 0)); tot.append(document.createTextNode('Total'), tb);
+        tip.replaceChildren(head, ...rows, tot);
+        const [px, py] = d3.pointer(ev, box);
+        const tw = tip.offsetWidth; let left = px + 14; if (left + tw > box.clientWidth) left = px - tw - 14; if (left < 0) left = 0;
+        tip.style.left = left + 'px'; tip.style.top = Math.max(0, py - 20) + 'px'; tip.style.opacity = 1;
+      })
+      .on('mouseleave', () => { tip.style.opacity = 0; });
+    drawnOnce = true;
+  });
+})();
+</script>
+
+<script>
+// Funnel
+(() => {
+  const box = document.getElementById('funnel-chart');
+  dash.onData(() => {
+    const F = dash.data('funnel');
+    if (F.status === 'error') { box.replaceChildren(); const f = document.createElement('div'); f.className = 'g-fail'; f.textContent = 'Failed to load'; box.append(f); return; }
+    if (F.status !== 'ok') { box.replaceChildren(); return; }
+    const per = dash.params().period || 'mtd';
+    const rows = F.data.filter((r) => r.period === per).sort((a, b) => a.stage_index - b.stage_index);
+    if (!rows.length) { box.replaceChildren(); return; }
+    const top = Math.max(rows[0].count, rows[0].prev_count || 0) || 1;
+    // step whose conversion fell most vs previous period
+    let worst = -1, worstDrop = 0;
+    rows.forEach((r, i) => {
+      if (!i || r.prev_count == null || !rows[i - 1].prev_count || !rows[i - 1].count) return;
+      const c = r.count / rows[i - 1].count, pc = r.prev_count / rows[i - 1].prev_count;
+      if (c - pc < worstDrop) { worstDrop = c - pc; worst = i; }
+    });
+    box.replaceChildren(...rows.map((r, i) => {
+      const fr = document.createElement('div'); fr.className = 'g-fr';
+      const lab = document.createElement('div'); lab.className = 'g-fl';
+      lab.append(document.createTextNode(r.stage));
+      const c = document.createElement('span'); c.className = 'c';
+      c.textContent = i ? (rows[i - 1].count ? Math.round(100 * r.count / rows[i - 1].count) + '% of previous step' : '—') : 'all leads';
+      if (i === worst) { c.style.color = 'var(--color-bad)'; c.textContent += ' · down ' + Math.round(-worstDrop * 100) + ' pts'; }
+      lab.append(c);
+      const tr = document.createElement('div'); tr.className = 'g-ft';
+      const cur = document.createElement('div'); cur.className = 'cur';
+      const w = 100 * r.count / top; cur.style.width = w + '%';
+      cur.style.setProperty('--fill', i === worst ? 'var(--cds-chart-status-critical)' : dash.colors[0]);
+      tr.append(cur);
+      if (r.prev_count != null) { const pv = document.createElement('div'); pv.className = 'prev'; pv.style.width = (100 * r.prev_count / top) + '%'; tr.append(pv); }
+      const n = document.createElement('div'); n.className = 'n'; n.style.left = 'calc(' + w + '% + 2px)';
+      n.textContent = d3.format(',')(r.count) + (r.prev_count != null ? '  (prev ' + d3.format(',')(r.prev_count) + ')' : '');
+      if (w > 70) { n.style.left = 'auto'; n.style.right = (100 - w) + '%'; n.style.color = 'var(--color-bg)'; n.style.paddingRight = '6px'; n.textContent = d3.format(',')(r.count); }
+      tr.append(n);
+      fr.append(lab, tr);
+      return fr;
+    }));
+  });
+})();
+</script>
+
+<script>
+// Tables
+(() => {
+  const inr = (v) => window.gFmt.inr(v), pct = window.gFmt.pct;
+  const enc = (s) => String(s).replace(/%/g, '%25').replace(/,/g, '%2C');
+  const fill = (tbody, rows, keyFn, cells) => {
+    tbody.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr');
+      if (keyFn) tr.dataset.key = keyFn(r);
+      cells.forEach(([get, cls]) => {
+        const td = document.createElement('td'); if (cls) td.className = cls;
+        const v = get(r);
+        if (v instanceof Node) td.append(v); else td.textContent = v;
+        tr.append(td);
+      });
+      return tr;
+    }));
+  };
+  const chip = (a) => { const s = document.createElement('span'); s.className = 'g-chip ' + a.split(' ')[0]; s.textContent = a; return s; };
+  const signed = (v) => (v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(0) + '%');
+  const fail = (tbody, cols) => { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = cols; const f = document.createElement('div'); f.className = 'g-fail'; f.textContent = 'Failed to load'; td.append(f); tr.append(td); tbody.replaceChildren(tr); };
+
+  dash.onData(() => {
+    const per = dash.params().period || 'mtd';
+    // assets
+    const A = dash.data('assets'); const at = document.querySelector('#assets-table tbody');
+    if (A.status === 'ok') {
+      const rows = A.data.filter((r) => r.period === per).sort((a, b) => a.campaign_type.localeCompare(b.campaign_type) || b.spend - a.spend);
+      const best = {}, worst = {};
+      rows.forEach((r) => { const t = r.campaign_type; if (r.ctr == null) return; if (!best[t] || r.ctr > best[t].ctr) best[t] = r; if (!worst[t] || r.ctr < worst[t].ctr) worst[t] = r; });
+      fill(at, rows, (r) => enc(r.period) + ',' + enc(r.asset), [
+        [(r) => r.asset], [(r) => r.campaign_type], [(r) => r.campaign + ' · ' + r.ad_set],
+        [(r) => inr(r.spend), 'num'],
+        [(r) => { const s = document.createElement('span'); s.textContent = pct(r.ctr, 2); if (best[r.campaign_type] === r) { s.className = 'g-best'; s.textContent += ' ▲ best'; } else if (worst[r.campaign_type] === r) { s.className = 'g-flag'; s.textContent += ' ▼ refresh'; } return s; }, 'num'],
+        [(r) => signed(r.ctr_change), 'num'],
+        [(r) => { const s = document.createElement('span'); s.textContent = r.frequency == null ? '—' : r.frequency.toFixed(2); if (r.frequency >= 3) s.className = 'g-flag'; return s; }, 'num'],
+        [(r) => d3.format(',')(r.results) + (r.campaign_type === 'Program' ? ' QL' : ' reg.'), 'num'],
+        [(r) => inr(r.cost_per_result), 'num'],
+      ]);
+    } else if (A.status === 'error') fail(at, 9); else at.replaceChildren();
+    // landing pages
+    const L = dash.data('landing'); const lt = document.querySelector('#lp-table tbody');
+    if (L.status === 'ok') {
+      fill(lt, L.data.filter((r) => r.period === per), (r) => enc(r.period) + ',' + enc(r.landing_page), [
+        [(r) => r.landing_page], [(r) => d3.format(',')(r.visits), 'num'], [(r) => d3.format(',')(r.submits), 'num'],
+        [(r) => pct(r.conversion, 1), 'num'], [(r) => pct(r.dropoff, 1), 'num'],
+        [(r) => { const s = document.createElement('span'); s.textContent = r.load_s.toFixed(1) + ' s'; if (r.load_s > 3) s.className = 'g-flag'; return s; }, 'num'],
+      ]);
+    } else if (L.status === 'error') fail(lt, 6); else lt.replaceChildren();
+    // RCA
+    const R = dash.data('adsets'); const rt = document.querySelector('#rca-table tbody');
+    if (R.status === 'ok') {
+      const order = {Kill: 0, 'Fix LP': 1, Refresh: 2, Scale: 3, Hold: 4, Watch: 5};
+      fill(rt, R.data.filter((r) => r.period === per).sort((a, b) => order[a.action] - order[b.action] || b.spend - a.spend), (r) => enc(r.period) + ',' + enc(r.ad_set_key), [
+        [(r) => chip(r.action)], [(r) => r.ad_set_key], [(r) => inr(r.spend), 'num'],
+        [(r) => inr(r.cost_per_result) + (r.campaign_type === 'Program' ? ' /QL' : ' /reg.'), 'num'],
+        [(r) => (r.frequency == null ? '—' : r.frequency.toFixed(2)), 'num'], [(r) => signed(r.ctr_change), 'num'],
+        [(r) => pct(r.lp_conversion, 1), 'num'], [(r) => (r.lp_load_s == null ? '—' : r.lp_load_s.toFixed(1) + ' s'), 'num'],
+        [(r) => r.reason, 'why'],
+      ]);
+    } else if (R.status === 'error') fail(rt, 9); else rt.replaceChildren();
+    // unpaid invoices
+    const I = dash.data('invoices'); const it = document.querySelector('#unpaid-table tbody');
+    if (I.status === 'ok') {
+      fill(it, I.data.filter((r) => r.status === 'Unpaid').sort((a, b) => b.days_open - a.days_open), null, [
+        [(r) => r.invoice_id], [(r) => r.family], [(r) => r.item], [(r) => inr(r.amount), 'num'],
+        [(r) => { const s = document.createElement('span'); s.textContent = r.days_open; if (r.days_open > 15) s.className = 'g-flag'; return s; }, 'num'], [(r) => r.owner],
+      ]);
+    } else if (I.status === 'error') fail(it, 6); else it.replaceChildren();
+    // renewals
+    const N = dash.data('renewals'); const nt = document.querySelector('#renew-table tbody');
+    if (N.status === 'ok') {
+      fill(nt, N.data.filter((r) => r.days_left <= 30).sort((a, b) => a.days_left - b.days_left), null, [
+        [(r) => r.family], [(r) => d3.utcFormat('%-d %b')(new Date(r.trial_end + 'T00:00:00Z'))], [(r) => r.days_left, 'num'], [(r) => r.advisor],
+        [(r) => { const s = document.createElement('span'); s.textContent = r.renewal_call; if (r.renewal_call === 'Not booked' || r.renewal_call === 'Done – at risk') s.className = 'g-flag'; return s; }],
+      ]);
+    } else if (N.status === 'error') fail(nt, 5); else nt.replaceChildren();
+  });
+})();
+</script>

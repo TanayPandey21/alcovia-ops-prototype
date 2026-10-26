@@ -1,0 +1,153 @@
+{
+  "name": "Nightly student rollup + advisor missing-inputs digest (01:00)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Nightly student rollup + advisor missing-inputs digest (01:00)\nTurns yesterday's app events into student_daily (meaningful minutes, focus, quiz, tasks) and tells each advisor which inputs are overdue, so gaps are chased before the weekly review.",
+        "width": 420,
+        "height": 220
+      },
+      "id": "1671f3e3-524b-539b-aa90-b727b92a2e96",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 1 * * *"
+            }
+          ]
+        }
+      },
+      "id": "68027516-e4d8-5231-835f-b92de24e1549",
+      "name": "Daily 01:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH e AS (\n  SELECT student_id, session_id, event_name, feature, occurred_at, props,\n         LEAD(occurred_at) OVER (PARTITION BY session_id ORDER BY occurred_at) AS next_at\n  FROM alcovia.app_events\n  WHERE occurred_at >= (CURRENT_DATE - 1) AND occurred_at < (CURRENT_DATE - 1) + 1\n),\nmins AS (\n  SELECT student_id,\n         SUM(CASE WHEN next_at IS NULL THEN 0            -- last event of a session adds nothing\n                  WHEN event_name = 'focus_started' THEN EXTRACT(EPOCH FROM (next_at - occurred_at)) / 60\n                  ELSE LEAST(EXTRACT(EPOCH FROM (next_at - occurred_at)) / 60, 2) END)\n           FILTER (WHERE feature IN ('home', 'focus', 'study', 'tasks', 'quiz', 'planner', 'realm')) AS app_min,\n         SUM((props->>'minutes')::numeric) FILTER (WHERE event_name = 'focus_completed')          AS focus_min,\n         BOOL_OR(event_name IN ('focus_completed', 'chapter_stage_completed', 'task_completed', 'quiz_answered')) AS active,\n         BOOL_OR(event_name = 'quiz_answered')                                                       AS quiz_taken,\n         MAX((props->>'score')::int) FILTER (WHERE event_name = 'quiz_answered')                    AS quiz_score,\n         COUNT(*) FILTER (WHERE event_name = 'task_completed')                                       AS tasks_done,\n         COUNT(*) FILTER (WHERE event_name = 'task_completed' AND (props->>'on_time')::boolean)      AS tasks_on_time,\n         SUM((props->>'est_min')::int) FILTER (WHERE event_name = 'task_completed')                  AS est_min,\n         SUM((props->>'actual_min')::int) FILTER (WHERE event_name = 'task_completed')               AS actual_min\n  FROM e GROUP BY student_id\n)\nINSERT INTO alcovia.student_daily (day, student_id, active, app_min, focus_min, quiz_taken, quiz_score, tasks_done, tasks_on_time, est_min, actual_min)\nSELECT (CURRENT_DATE - 1), s.student_id, COALESCE(m.active, false), COALESCE(m.app_min, 0), COALESCE(m.focus_min, 0),\n       COALESCE(m.quiz_taken, false), m.quiz_score, COALESCE(m.tasks_done, 0), COALESCE(m.tasks_on_time, 0),\n       COALESCE(m.est_min, 0), COALESCE(m.actual_min, 0)\nFROM alcovia.students s LEFT JOIN mins m USING (student_id)\nWHERE s.status = 'Active'\nON CONFLICT (day, student_id) DO UPDATE SET\n  active = EXCLUDED.active, app_min = EXCLUDED.app_min, focus_min = EXCLUDED.focus_min,\n  quiz_taken = EXCLUDED.quiz_taken, quiz_score = EXCLUDED.quiz_score, tasks_done = EXCLUDED.tasks_done,\n  tasks_on_time = EXCLUDED.tasks_on_time, est_min = EXCLUDED.est_min, actual_min = EXCLUDED.actual_min;\n-- tasks_planned, slots_* come from the timetable sync; sleep_h / active_min from the wearable sync.\n",
+        "options": {}
+      },
+      "id": "0cfcbd08-787a-5c62-8e12-627a0e6ff206",
+      "name": "Roll up yesterday (db/rollups/student_daily.sql)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT s.advisor, string_agg(s.display_name || ': ' || l.input, ', ') AS missing\nFROM alcovia.advisor_input_log l JOIN alcovia.students s USING (student_id)\nWHERE l.done_on IS NULL AND l.due_on < CURRENT_DATE GROUP BY s.advisor;",
+        "options": {}
+      },
+      "id": "7d7cc2a6-1963-56e1-81b2-085320feee5d",
+      "name": "Missing advisor inputs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.clickup.com/api/v3/workspaces/{{$env.CLICKUP_TEAM_ID}}/chat/channels/{{$env.CLICKUP_ADVISORS_CHANNEL}}/messages",
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"content\": \"{{$json.advisor}}, inputs still missing: {{$json.missing}}\"}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "a27332a7-1c6c-5302-9293-ebaa2eab7e37",
+      "name": "Post digest to each advisor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "ClickUp API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 01:00": {
+      "main": [
+        [
+          {
+            "node": "Roll up yesterday (db/rollups/student_daily.sql)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roll up yesterday (db/rollups/student_daily.sql)": {
+      "main": [
+        [
+          {
+            "node": "Missing advisor inputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Missing advisor inputs": {
+      "main": [
+        [
+          {
+            "node": "Post digest to each advisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "tags": [
+    {
+      "name": "alcovia"
+    }
+  ]
+}

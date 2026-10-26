@@ -1,0 +1,16 @@
+# App tracking plan. Every event carries: student_id (pseudonymous), session_id, feature, occurred_at.
+# No names, passwords or raw health data in analytics events. Events land in alcovia.app_events.
+events:
+  app_opened:              {feature: any,    answers: "Who comes back, and when"}
+  session_ended:           {feature: any,    answers: "Session length; last event of a session adds no minutes"}
+  app_backgrounded:        {feature: any,    answers: "Splits active from idle time"}
+  home_action_tapped:      {feature: home,   props: {action: string},                 answers: "Does Home lead to an action or just get looked at"}
+  feature_viewed:          {feature: any,    answers: "Discovery; first use feeds the 7-day feature repeat rate"}
+  focus_started:           {feature: focus,  props: {planned_min: int, chapter_id: string, task_id: string}}
+  focus_completed:         {feature: focus,  props: {minutes: int, chapter_id: string},  answers: "Focus minutes; time in focus always counts as meaningful"}
+  focus_abandoned:         {feature: focus,  props: {minutes: int, reason: string},     answers: "Where focus sessions break"}
+  chapter_stage_completed: {feature: study,  props: {chapter_id: string, stage: "read|notes|practice|past_paper|exam_ready", score_pct: int}}
+  task_completed:          {feature: tasks,  props: {task_id: string, on_time: bool, est_min: int, actual_min: int}}
+  quiz_answered:           {feature: quiz,   props: {quiz_day: date, score: int},        answers: "Daily 8 pm quiz participation and score"}
+  realm_action_completed:  {feature: realm,  props: {action: string, fuel_source: "focus|chapter|coins"}, answers: "Is game progress earned by study"}
+  activity_rated:          {feature: home,   props: {activity_id: int, rating: "1-5"},   answers: "Liked lens; written back to activity_log.rating"}

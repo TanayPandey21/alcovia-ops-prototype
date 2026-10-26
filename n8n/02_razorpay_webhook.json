@@ -1,0 +1,105 @@
+{
+  "name": "Razorpay \u2192 payments & invoices (real time)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Razorpay \u2192 payments & invoices (real time)\nEvery captured payment lands in Postgres within seconds. Payment links and invoices carry notes {plan, payment_type, invoice_id, workshop_id} so each rupee is attributed to trial, full program, upgrade or a specific workshop.",
+        "width": 420,
+        "height": 220
+      },
+      "id": "1671f3e3-524b-539b-aa90-b727b92a2e96",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "razorpay",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "f68f52e4-d7f5-5db9-a8a3-e1c1c1501cf9",
+      "name": "Razorpay webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Reject anything not signed with our Razorpay webhook secret.\nconst crypto = require('crypto');\nconst item = $input.first();\nconst raw = item.binary?.data ? Buffer.from(item.binary.data.data, 'base64').toString() : JSON.stringify(item.json.body);\nconst expected = crypto.createHmac('sha256', $env.RAZORPAY_WEBHOOK_SECRET).update(raw).digest('hex');\nif (expected !== item.json.headers['x-razorpay-signature']) throw new Error('Bad Razorpay signature');\nconst body = item.json.body;\nif (body.event !== 'payment.captured') return [];\nconst p = body.payload.payment.entity, notes = p.notes || {};\nreturn [{ json: {\n  razorpay_payment_id: p.id,\n  paid_on: new Date(p.created_at * 1000).toISOString().slice(0, 10),\n  stream: notes.workshop_id ? 'Workshop' : 'Program',\n  plan: notes.plan || 'Workshop seat',                 // set on the payment link / invoice\n  payment_type: notes.payment_type || 'Workshop seat',\n  amount_inr: p.amount / 100,\n  invoice_id: notes.invoice_id || null, workshop_id: notes.workshop_id || null\n}}];"
+      },
+      "id": "8c2c68bf-7c25-5a25-9d33-f60cede62576",
+      "name": "Verify signature + map",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO alcovia.payments (razorpay_payment_id, paid_on, stream, plan, payment_type, amount_inr, invoice_id, workshop_id)\nVALUES ('{{$json.razorpay_payment_id}}', '{{$json.paid_on}}', '{{$json.stream}}', '{{$json.plan}}', '{{$json.payment_type}}', {{$json.amount_inr}},\n        NULLIF('{{$json.invoice_id}}', 'null'), NULLIF('{{$json.workshop_id}}', 'null'))\nON CONFLICT (razorpay_payment_id) DO NOTHING;\nUPDATE alcovia.invoices SET status = 'Paid', paid_on = '{{$json.paid_on}}' WHERE invoice_id = NULLIF('{{$json.invoice_id}}', 'null');",
+        "options": {}
+      },
+      "id": "e320c513-71cb-524a-a2fd-10ddfeb24e57",
+      "name": "Insert payment + mark invoice paid",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "Alcovia DB"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Razorpay webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify signature + map",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify signature + map": {
+      "main": [
+        [
+          {
+            "node": "Insert payment + mark invoice paid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "tags": [
+    {
+      "name": "alcovia"
+    }
+  ]
+}

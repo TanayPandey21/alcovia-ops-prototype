@@ -1,0 +1,11 @@
+{
+  "name": "alcovia-ops-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "python3 db/seed/build_seed.py",
+    "n8n": "python3 scripts/build_n8n.py",
+    "test": "node scripts/test_sql.mjs"
+  },
+  "devDependencies": { "@electric-sql/pglite": "0.2.17" }
+}
